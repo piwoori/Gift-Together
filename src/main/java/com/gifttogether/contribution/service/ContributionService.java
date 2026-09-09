@@ -11,6 +11,8 @@ import com.gifttogether.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.gifttogether.payment.domain.Payment;
+import com.gifttogether.payment.repository.PaymentRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +21,7 @@ public class ContributionService {
     private final FundingRepository fundingRepository;
     private final UserRepository userRepository;
     private final ContributionRepository contributionRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public ContributionCreateResponse contribute(
@@ -41,14 +44,20 @@ public class ContributionService {
                 request.anonymous()
         );
 
-        // 일단 Mock Payment가 성공했다고 가정
-        contribution.complete();
-
-        // 펀딩 현재 금액 증가
-        funding.contribute(request.amount());
-
         Contribution savedContribution =
                 contributionRepository.save(contribution);
+
+        Payment payment = new Payment(
+                savedContribution,
+                request.amount()
+        );
+
+        payment.success();
+        paymentRepository.save(payment);
+
+        funding.contribute(request.amount());
+
+        savedContribution.complete();
 
         return ContributionCreateResponse.from(savedContribution);
     }
