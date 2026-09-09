@@ -12,6 +12,7 @@ import com.gifttogether.wishlist.repository.WishlistItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.gifttogether.funding.dto.FundingDetailResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,14 @@ public class FundingService {
     private final ProductRepository productRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final FundingRepository fundingRepository;
+
+    @Transactional(readOnly = true)
+    public FundingDetailResponse getFunding(Long fundingId) {
+        Funding funding = fundingRepository.findById(fundingId)
+                .orElseThrow(() -> new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+
+        return FundingDetailResponse.from(funding);
+    }
 
     @Transactional
     public FundingCreateResponse createFunding(
