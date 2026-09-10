@@ -8,6 +8,8 @@ public record ContributionCreateRequest(
         @Min(1000)
         Long amount,
 
-        boolean anonymous
+        boolean anonymous,
+
+        boolean simulatePaymentFailure
 ) {
 }
