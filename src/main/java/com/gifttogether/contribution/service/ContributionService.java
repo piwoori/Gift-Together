@@ -29,7 +29,7 @@ public class ContributionService {
             Long userId,
             ContributionCreateRequest request
     ) {
-        Funding funding = fundingRepository.findById(fundingId)
+        Funding funding = fundingRepository.findByIdWithLock(fundingId)
                 .orElseThrow(() ->
                         new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
 
