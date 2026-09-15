@@ -33,4 +33,18 @@ public class ContributionController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+    @PostMapping("/{contributionId}/cancel")
+    public ResponseEntity<Void> cancelContribution(
+            @PathVariable Long fundingId,
+            @PathVariable Long contributionId,
+            @RequestHeader("X-USER-ID") Long userId
+    ) {
+        contributionService.cancelContribution(
+                contributionId,
+                userId
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

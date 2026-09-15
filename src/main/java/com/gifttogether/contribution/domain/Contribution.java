@@ -62,4 +62,13 @@ public class Contribution {
         this.status = ContributionStatus.COMPLETED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void cancel() {
+        if (this.status != ContributionStatus.COMPLETED) {
+            throw new IllegalStateException("완료된 참여만 취소할 수 있습니다.");
+        }
+
+        this.status = ContributionStatus.CANCELLED;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

@@ -93,4 +93,21 @@ public class Funding {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void cancelContribution(Long amount) {
+        if (this.status != FundingStatus.OPEN) {
+            throw new IllegalStateException("진행 중인 펀딩에서만 참여를 취소할 수 있습니다.");
+        }
+
+        if (amount <= 0) {
+            throw new IllegalArgumentException("취소 금액은 0원보다 커야 합니다.");
+        }
+
+        if (amount > this.currentAmount) {
+            throw new IllegalArgumentException("현재 모금액보다 큰 금액을 취소할 수 없습니다.");
+        }
+
+        this.currentAmount -= amount;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

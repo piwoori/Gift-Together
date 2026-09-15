@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.gifttogether.payment.domain.Payment;
 import com.gifttogether.payment.repository.PaymentRepository;
+import com.gifttogether.funding.domain.FundingStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -67,5 +68,35 @@ public class ContributionService {
         savedContribution.complete();
 
         return ContributionCreateResponse.from(savedContribution);
+    }
+
+    @Transactional
+    public void cancelContribution(Long contributionId, Long userId) {
+
+        Contribution contribution = contributionRepository.findById(contributionId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("참여 내역을 찾을 수 없습니다."));
+
+        if (!contribution.getContributor().getId().equals(userId)) {
+            throw new IllegalStateException("본인의 참여만 취소할 수 있습니다.");
+        }
+
+        Funding funding = fundingRepository
+                .findByIdWithLock(contribution.getFunding().getId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+
+        if (funding.getStatus() != FundingStatus.OPEN) {
+            throw new IllegalStateException("진행 중인 펀딩에서만 참여를 취소할 수 있습니다.");
+        }
+
+        Payment payment = paymentRepository
+                .findByContributionId(contributionId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("결제 내역을 찾을 수 없습니다."));
+
+        payment.cancel();
+        funding.cancelContribution(contribution.getAmount());
+        contribution.cancel();
     }
 }
