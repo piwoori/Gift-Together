@@ -38,4 +38,14 @@ public class FundingController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+    @PostMapping("/{fundingId}/cancel")
+    public ResponseEntity<Void> cancelFunding(
+            @PathVariable Long fundingId,
+            @RequestHeader("X-USER-ID") Long userId
+    ) {
+        fundingService.cancelFunding(fundingId, userId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

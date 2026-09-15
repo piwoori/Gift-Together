@@ -71,4 +71,13 @@ public class Contribution {
         this.status = ContributionStatus.CANCELLED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void refund() {
+        if (this.status != ContributionStatus.COMPLETED) {
+            throw new IllegalStateException("완료된 참여만 환불할 수 있습니다.");
+        }
+
+        this.status = ContributionStatus.REFUNDED;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

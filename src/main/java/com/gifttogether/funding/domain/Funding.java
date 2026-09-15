@@ -110,4 +110,14 @@ public class Funding {
         this.currentAmount -= amount;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void cancel() {
+        if (this.status != FundingStatus.OPEN) {
+            throw new IllegalStateException("진행 중인 펀딩만 취소할 수 있습니다.");
+        }
+
+        this.status = FundingStatus.CANCELLED;
+        this.currentAmount = 0L;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

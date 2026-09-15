@@ -1,5 +1,7 @@
 package com.gifttogether.funding.service;
 
+import java.util.List;
+
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.dto.FundingCreateRequest;
 import com.gifttogether.funding.dto.FundingCreateResponse;
@@ -13,6 +15,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.gifttogether.funding.dto.FundingDetailResponse;
+import com.gifttogether.contribution.domain.Contribution;
+import com.gifttogether.contribution.domain.ContributionStatus;
+import com.gifttogether.contribution.repository.ContributionRepository;
+import com.gifttogether.payment.domain.Payment;
+import com.gifttogether.payment.repository.PaymentRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +29,8 @@ public class FundingService {
     private final ProductRepository productRepository;
     private final WishlistItemRepository wishlistItemRepository;
     private final FundingRepository fundingRepository;
+    private final ContributionRepository contributionRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public FundingDetailResponse getFunding(Long fundingId) {
@@ -59,5 +68,36 @@ public class FundingService {
         Funding savedFunding = fundingRepository.save(funding);
 
         return FundingCreateResponse.from(savedFunding);
+    }
+
+    @Transactional
+    public void cancelFunding(Long fundingId, Long userId) {
+
+        Funding funding = fundingRepository.findByIdWithLock(fundingId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+
+        if (!funding.getReceiver().getId().equals(userId)) {
+            throw new IllegalStateException("펀딩 생성자만 취소할 수 있습니다.");
+        }
+
+        List<Contribution> contributions =
+                contributionRepository.findAllByFundingIdAndStatus(
+                        fundingId,
+                        ContributionStatus.COMPLETED
+                );
+
+        for (Contribution contribution : contributions) {
+
+            Payment payment = paymentRepository
+                    .findByContributionId(contribution.getId())
+                    .orElseThrow(() ->
+                            new IllegalArgumentException("결제 내역을 찾을 수 없습니다."));
+
+            payment.cancel();
+            contribution.refund();
+        }
+
+        funding.cancel();
     }
 }
