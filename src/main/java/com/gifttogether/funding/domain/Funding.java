@@ -120,4 +120,17 @@ public class Funding {
         this.currentAmount = 0L;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void expire(LocalDateTime now) {
+        if (this.status != FundingStatus.OPEN) {
+            throw new IllegalStateException("진행 중인 펀딩만 만료할 수 있습니다.");
+        }
+
+        if (now.isBefore(this.expiredAt)) {
+            throw new IllegalStateException("아직 마감 시간이 지나지 않았습니다.");
+        }
+
+        this.status = FundingStatus.EXPIRED;
+        this.updatedAt = now;
+    }
 }

@@ -1,6 +1,7 @@
 package com.gifttogether.funding.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.dto.FundingCreateRequest;
@@ -20,6 +21,10 @@ import com.gifttogether.contribution.domain.ContributionStatus;
 import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.payment.domain.Payment;
 import com.gifttogether.payment.repository.PaymentRepository;
+import com.gifttogether.wallet.domain.Wallet;
+import com.gifttogether.wallet.domain.WalletTransaction;
+import com.gifttogether.wallet.repository.WalletRepository;
+import com.gifttogether.wallet.repository.WalletTransactionRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +36,8 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final ContributionRepository contributionRepository;
     private final PaymentRepository paymentRepository;
+    private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
 
     @Transactional(readOnly = true)
     public FundingDetailResponse getFunding(Long fundingId) {
@@ -99,5 +106,36 @@ public class FundingService {
         }
 
         funding.cancel();
+    }
+
+    @Transactional
+    public void expireFunding(Long fundingId, LocalDateTime now) {
+
+        Funding funding = fundingRepository.findByIdWithLock(fundingId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+
+        funding.expire(now);
+
+        Long amount = funding.getCurrentAmount();
+
+        if (amount == 0) {
+            return;
+        }
+
+        Wallet wallet = walletRepository
+                .findByUserId(funding.getReceiver().getId())
+                .orElseGet(() ->
+                        walletRepository.save(
+                                new Wallet(funding.getReceiver())
+                        )
+                );
+
+        wallet.deposit(amount);
+
+        WalletTransaction transaction =
+                new WalletTransaction(wallet, funding, amount);
+
+        walletTransactionRepository.save(transaction);
     }
 }
