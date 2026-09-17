@@ -25,6 +25,7 @@ import com.gifttogether.wallet.domain.Wallet;
 import com.gifttogether.wallet.domain.WalletTransaction;
 import com.gifttogether.wallet.repository.WalletRepository;
 import com.gifttogether.wallet.repository.WalletTransactionRepository;
+import com.gifttogether.funding.domain.FundingStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -114,6 +115,10 @@ public class FundingService {
         Funding funding = fundingRepository.findByIdWithLock(fundingId)
                 .orElseThrow(() ->
                         new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+
+        if (funding.getStatus() == FundingStatus.EXPIRED) {
+            return;
+        }
 
         funding.expire(now);
 

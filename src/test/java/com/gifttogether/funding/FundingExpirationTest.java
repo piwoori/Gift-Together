@@ -11,6 +11,7 @@ import com.gifttogether.product.repository.ProductRepository;
 import com.gifttogether.user.domain.User;
 import com.gifttogether.user.repository.UserRepository;
 import com.gifttogether.wallet.domain.Wallet;
+import com.gifttogether.wallet.domain.WalletTransactionType;
 import com.gifttogether.wallet.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,7 +116,80 @@ class FundingExpirationTest {
         assertThat(wallet.getBalance())
                 .isEqualTo(80_000L);
 
-        assertThat(walletTransactionRepository.count())
-                .isEqualTo(1);
+        assertThat(
+                walletTransactionRepository.existsByFundingIdAndType(
+                        funding.getId(),
+                        WalletTransactionType.FUNDING_EXPIRED_REWARD
+                )
+        ).isTrue();
+    }
+
+    @Test
+    void 같은_펀딩을_두번_만료처리해도_지갑에는_한번만_지급된다() {
+
+        // given
+        User receiver = userRepository.save(
+                new User("receiver2", "receiver2@test.com")
+        );
+
+        User contributor = userRepository.save(
+                new User("contributor2", "contributor2@test.com")
+        );
+
+        Product product = productRepository.save(
+                new Product(
+                        "테스트 상품2",
+                        150_000L,
+                        "https://example.com/test2.jpg"
+                )
+        );
+
+        Funding funding = fundingRepository.save(
+                new Funding(
+                        receiver,
+                        product,
+                        LocalDateTime.now().plusMinutes(10),
+                        "중복 만료 테스트"
+                )
+        );
+
+        contributionService.contribute(
+                funding.getId(),
+                contributor.getId(),
+                new ContributionCreateRequest(
+                        80_000L,
+                        false,
+                        false
+                )
+        );
+
+        LocalDateTime expirationTime =
+                LocalDateTime.now().plusMinutes(20);
+
+        // when
+        fundingService.expireFunding(
+                funding.getId(),
+                expirationTime
+        );
+
+        fundingService.expireFunding(
+                funding.getId(),
+                expirationTime
+        );
+
+        // then
+        Wallet wallet = walletRepository
+                .findByUserId(receiver.getId())
+                .orElseThrow();
+
+        assertThat(wallet.getBalance())
+                .isEqualTo(80_000L);
+
+        assertThat(
+                walletTransactionRepository.existsByFundingIdAndType(
+                        funding.getId(),
+                        WalletTransactionType.FUNDING_EXPIRED_REWARD
+                )
+        ).isTrue();
     }
 }
