@@ -1,6 +1,7 @@
 package com.gifttogether.funding.repository;
 
 import com.gifttogether.funding.domain.Funding;
+import com.gifttogether.funding.domain.FundingStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -8,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface FundingRepository extends JpaRepository<Funding, Long> {
 
@@ -15,5 +18,10 @@ public interface FundingRepository extends JpaRepository<Funding, Long> {
     @Query("select f from Funding f where f.id = :fundingId")
     Optional<Funding> findByIdWithLock(
             @Param("fundingId") Long fundingId
+    );
+
+    List<Funding> findAllByStatusAndExpiredAtLessThanEqual(
+            FundingStatus status,
+            LocalDateTime now
     );
 }
