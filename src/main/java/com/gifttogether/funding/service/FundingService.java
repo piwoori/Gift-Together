@@ -3,6 +3,7 @@ package com.gifttogether.funding.service;
 import java.util.List;
 import java.time.LocalDateTime;
 
+import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.dto.FundingCreateRequest;
 import com.gifttogether.funding.dto.FundingCreateResponse;
@@ -19,6 +20,7 @@ import com.gifttogether.funding.dto.FundingDetailResponse;
 import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.contribution.domain.ContributionStatus;
 import com.gifttogether.contribution.repository.ContributionRepository;
+import com.gifttogether.common.exception.FundingNotFoundException;
 import com.gifttogether.payment.domain.Payment;
 import com.gifttogether.payment.repository.PaymentRepository;
 import com.gifttogether.wallet.domain.Wallet;
@@ -43,7 +45,7 @@ public class FundingService {
     @Transactional(readOnly = true)
     public FundingDetailResponse getFunding(Long fundingId) {
         Funding funding = fundingRepository.findById(fundingId)
-                .orElseThrow(() -> new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         return FundingDetailResponse.from(funding);
     }
@@ -54,7 +56,7 @@ public class FundingService {
             FundingCreateRequest request
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         boolean exists = wishlistItemRepository
                 .existsByUserIdAndProductId(userId, request.productId());
@@ -64,7 +66,7 @@ public class FundingService {
         }
 
         Product product = productRepository.findById(request.productId())
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         Funding funding = new Funding(
                 user,
@@ -82,11 +84,10 @@ public class FundingService {
     public void cancelFunding(Long fundingId, Long userId) {
 
         Funding funding = fundingRepository.findByIdWithLock(fundingId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         if (!funding.getReceiver().getId().equals(userId)) {
-            throw new IllegalStateException("펀딩 생성자만 취소할 수 있습니다.");
+            throw new ForbiddenException("펀딩 생성자만 취소할 수 있습니다.");
         }
 
         List<Contribution> contributions =
@@ -99,8 +100,7 @@ public class FundingService {
 
             Payment payment = paymentRepository
                     .findByContributionId(contribution.getId())
-                    .orElseThrow(() ->
-                            new IllegalArgumentException("결제 내역을 찾을 수 없습니다."));
+                    .orElseThrow(FundingNotFoundException::new);
 
             payment.cancel();
             contribution.refund();
@@ -113,8 +113,7 @@ public class FundingService {
     public void expireFunding(Long fundingId, LocalDateTime now) {
 
         Funding funding = fundingRepository.findByIdWithLock(fundingId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         if (funding.getStatus() == FundingStatus.EXPIRED) {
             return;

@@ -1,5 +1,6 @@
 package com.gifttogether.contribution.service;
 
+import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
@@ -78,7 +79,7 @@ public class ContributionService {
                         new IllegalArgumentException("참여 내역을 찾을 수 없습니다."));
 
         if (!contribution.getContributor().getId().equals(userId)) {
-            throw new IllegalStateException("본인의 참여만 취소할 수 있습니다.");
+            throw new ForbiddenException("본인의 참여만 취소할 수 있습니다.");
         }
 
         Funding funding = fundingRepository
