@@ -134,4 +134,52 @@ class ExceptionHandlingTest {
                 .andExpect(jsonPath("$.code")
                         .value("FORBIDDEN"));
     }
+
+    @Test
+    void 취소된_펀딩에_참여하면_409를_반환한다() throws Exception {
+
+        User receiver = userRepository.save(
+                new User("receiver409", "receiver409@test.com")
+        );
+
+        User contributor = userRepository.save(
+                new User("contributor409", "contributor409@test.com")
+        );
+
+        Product product = productRepository.save(
+                new Product(
+                        "409 테스트 상품",
+                        150_000L,
+                        "https://example.com/409.jpg"
+                )
+        );
+
+        Funding funding = fundingRepository.save(
+                new Funding(
+                        receiver,
+                        product,
+                        LocalDateTime.now().plusDays(1),
+                        "409 테스트"
+                )
+        );
+
+        // OPEN → CANCELLED
+        funding.cancel();
+        fundingRepository.save(funding);
+
+        mockMvc.perform(
+                        post("/api/fundings/" + funding.getId() + "/contributions")
+                                .header("X-USER-ID", contributor.getId())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "amount": 10000,
+                                      "anonymous": false,
+                                      "simulatePaymentFailure": false
+                                    }
+                                    """)
+                )
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
 }

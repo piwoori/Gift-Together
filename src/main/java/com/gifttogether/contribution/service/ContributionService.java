@@ -5,6 +5,11 @@ import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.repository.ContributionRepository;
+import com.gifttogether.common.exception.ConflictException;
+import com.gifttogether.common.exception.ContributionNotFoundException;
+import com.gifttogether.common.exception.ForbiddenException;
+import com.gifttogether.common.exception.FundingNotFoundException;
+import com.gifttogether.common.exception.UserNotFoundException;
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.repository.FundingRepository;
 import com.gifttogether.user.domain.User;
@@ -32,12 +37,10 @@ public class ContributionService {
             ContributionCreateRequest request
     ) {
         Funding funding = fundingRepository.findByIdWithLock(fundingId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         User contributor = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(UserNotFoundException::new);
 
         Contribution contribution = new Contribution(
                 funding,
@@ -74,9 +77,9 @@ public class ContributionService {
     @Transactional
     public void cancelContribution(Long contributionId, Long userId) {
 
-        Contribution contribution = contributionRepository.findById(contributionId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("참여 내역을 찾을 수 없습니다."));
+        Contribution contribution =
+                contributionRepository.findById(contributionId)
+                        .orElseThrow(ContributionNotFoundException::new);
 
         if (!contribution.getContributor().getId().equals(userId)) {
             throw new ForbiddenException("본인의 참여만 취소할 수 있습니다.");
@@ -84,11 +87,12 @@ public class ContributionService {
 
         Funding funding = fundingRepository
                 .findByIdWithLock(contribution.getFunding().getId())
-                .orElseThrow(() ->
-                        new IllegalArgumentException("펀딩을 찾을 수 없습니다."));
+                .orElseThrow(FundingNotFoundException::new);
 
         if (funding.getStatus() != FundingStatus.OPEN) {
-            throw new IllegalStateException("진행 중인 펀딩에서만 참여를 취소할 수 있습니다.");
+            throw new ConflictException(
+                    "진행 중인 펀딩에서만 참여를 취소할 수 있습니다."
+            );
         }
 
         Payment payment = paymentRepository

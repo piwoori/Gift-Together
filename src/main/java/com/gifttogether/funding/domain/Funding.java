@@ -1,5 +1,7 @@
 package com.gifttogether.funding.domain;
 
+import com.gifttogether.common.exception.BadRequestException;
+import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.product.domain.Product;
 import com.gifttogether.user.domain.User;
 import jakarta.persistence.*;
@@ -17,21 +19,21 @@ public class Funding {
 
     public void contribute(Long amount) {
         if (this.status != FundingStatus.OPEN) {
-            throw new IllegalStateException("진행 중인 펀딩이 아닙니다.");
+            throw new ConflictException("진행 중인 펀딩이 아닙니다.");
         }
 
         if (LocalDateTime.now().isAfter(this.expiredAt)) {
-            throw new IllegalStateException("마감된 펀딩입니다.");
+            throw new ConflictException("마감된 펀딩입니다.");
         }
 
         if (amount < 1000) {
-            throw new IllegalArgumentException("최소 참여 금액은 1,000원입니다.");
+            throw new BadRequestException("최소 참여 금액은 1,000원입니다.");
         }
 
         long remainingAmount = this.targetAmount - this.currentAmount;
 
         if (amount > remainingAmount) {
-            throw new IllegalArgumentException("남은 금액을 초과할 수 없습니다.");
+            throw new BadRequestException("남은 금액을 초과할 수 없습니다.");
         }
 
         this.currentAmount += amount;
@@ -96,15 +98,15 @@ public class Funding {
 
     public void cancelContribution(Long amount) {
         if (this.status != FundingStatus.OPEN) {
-            throw new IllegalStateException("진행 중인 펀딩에서만 참여를 취소할 수 있습니다.");
+            throw new ConflictException("진행 중인 펀딩에서만 참여를 취소할 수 있습니다.");
         }
 
         if (amount <= 0) {
-            throw new IllegalArgumentException("취소 금액은 0원보다 커야 합니다.");
+            throw new BadRequestException("취소 금액은 0원보다 커야 합니다.");
         }
 
         if (amount > this.currentAmount) {
-            throw new IllegalArgumentException("현재 모금액보다 큰 금액을 취소할 수 없습니다.");
+            throw new BadRequestException("현재 모금액보다 큰 금액을 취소할 수 없습니다.");
         }
 
         this.currentAmount -= amount;
@@ -113,7 +115,7 @@ public class Funding {
 
     public void cancel() {
         if (this.status != FundingStatus.OPEN) {
-            throw new IllegalStateException("진행 중인 펀딩만 취소할 수 있습니다.");
+            throw new ConflictException("진행 중인 펀딩만 취소할 수 있습니다.");
         }
 
         this.status = FundingStatus.CANCELLED;
@@ -123,11 +125,11 @@ public class Funding {
 
     public void expire(LocalDateTime now) {
         if (this.status != FundingStatus.OPEN) {
-            throw new IllegalStateException("진행 중인 펀딩만 만료할 수 있습니다.");
+            throw new ConflictException("진행 중인 펀딩만 만료할 수 있습니다.");
         }
 
         if (now.isBefore(this.expiredAt)) {
-            throw new IllegalStateException("아직 마감 시간이 지나지 않았습니다.");
+            throw new ConflictException("아직 마감 시간이 지나지 않았습니다.");
         }
 
         this.status = FundingStatus.EXPIRED;

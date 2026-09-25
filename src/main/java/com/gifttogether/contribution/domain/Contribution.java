@@ -1,5 +1,6 @@
 package com.gifttogether.contribution.domain;
 
+import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.user.domain.User;
 import jakarta.persistence.*;
@@ -65,7 +66,7 @@ public class Contribution {
 
     public void cancel() {
         if (this.status != ContributionStatus.COMPLETED) {
-            throw new IllegalStateException("완료된 참여만 취소할 수 있습니다.");
+            throw new ConflictException("완료된 참여만 취소할 수 있습니다.");
         }
 
         this.status = ContributionStatus.CANCELLED;
@@ -74,7 +75,7 @@ public class Contribution {
 
     public void refund() {
         if (this.status != ContributionStatus.COMPLETED) {
-            throw new IllegalStateException("완료된 참여만 환불할 수 있습니다.");
+            throw new ConflictException("완료된 참여만 환불할 수 있습니다.");
         }
 
         this.status = ContributionStatus.REFUNDED;

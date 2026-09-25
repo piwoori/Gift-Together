@@ -78,4 +78,40 @@ public class GlobalExceptionHandler {
                         message
                 ));
     }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(
+            UserNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "USER_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleProductNotFound(
+            ProductNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "PRODUCT_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(ContributionNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleContributionNotFound(
+            ContributionNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "CONTRIBUTION_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
 }

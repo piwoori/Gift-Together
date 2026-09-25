@@ -1,6 +1,7 @@
 package com.gifttogether.payment.domain;
 
 import com.gifttogether.contribution.domain.Contribution;
+import com.gifttogether.common.exception.ConflictException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -46,7 +47,7 @@ public class Payment {
 
     public void success() {
         if (this.status != PaymentStatus.READY) {
-            throw new IllegalStateException("결제 대기 상태가 아닙니다.");
+            throw new ConflictException("결제 대기 상태가 아닙니다.");
         }
 
         this.status = PaymentStatus.SUCCESS;
@@ -55,7 +56,7 @@ public class Payment {
 
     public void fail() {
         if (this.status != PaymentStatus.READY) {
-            throw new IllegalStateException("결제 대기 상태가 아닙니다.");
+            throw new ConflictException("결제 대기 상태가 아닙니다.");
         }
 
         this.status = PaymentStatus.FAILED;
@@ -63,7 +64,7 @@ public class Payment {
 
     public void cancel() {
         if (this.status != PaymentStatus.SUCCESS) {
-            throw new IllegalStateException("성공한 결제만 취소할 수 있습니다.");
+            throw new ConflictException("성공한 결제만 취소할 수 있습니다.");
         }
 
         this.status = PaymentStatus.CANCELLED;

@@ -3,6 +3,7 @@ package com.gifttogether.funding.service;
 import java.util.List;
 import java.time.LocalDateTime;
 
+import com.gifttogether.common.exception.BadRequestException;
 import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.dto.FundingCreateRequest;
@@ -62,7 +63,7 @@ public class FundingService {
                 .existsByUserIdAndProductId(userId, request.productId());
 
         if (!exists) {
-            throw new IllegalArgumentException("위시리스트에 없는 상품입니다.");
+            throw new BadRequestException("위시리스트에 없는 상품입니다.");
         }
 
         Product product = productRepository.findById(request.productId())

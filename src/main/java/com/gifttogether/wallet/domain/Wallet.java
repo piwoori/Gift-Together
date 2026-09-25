@@ -1,5 +1,6 @@
 package com.gifttogether.wallet.domain;
 
+import com.gifttogether.common.exception.BadRequestException;
 import com.gifttogether.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -40,7 +41,7 @@ public class Wallet {
 
     public void deposit(Long amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("입금 금액은 0원보다 커야 합니다.");
+            throw new BadRequestException("입금 금액은 0원보다 커야 합니다.");
         }
 
         this.balance += amount;
