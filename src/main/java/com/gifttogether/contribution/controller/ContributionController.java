@@ -2,6 +2,7 @@ package com.gifttogether.contribution.controller;
 
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
+import com.gifttogether.contribution.dto.ContributionResponse;
 import com.gifttogether.contribution.service.ContributionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,9 +10,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/fundings/{fundingId}/contributions")
 @RequiredArgsConstructor
+@RequestMapping("/api/fundings/{fundingId}/contributions")
 public class ContributionController {
 
     private final ContributionService contributionService;
@@ -46,5 +49,12 @@ public class ContributionController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public List<ContributionResponse> getContributions(
+            @PathVariable Long fundingId
+    ) {
+        return contributionService.getContributions(fundingId);
     }
 }

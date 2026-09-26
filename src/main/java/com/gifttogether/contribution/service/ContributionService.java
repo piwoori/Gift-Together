@@ -4,6 +4,7 @@ import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
+import com.gifttogether.contribution.dto.ContributionResponse;
 import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.common.exception.ContributionNotFoundException;
@@ -20,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.gifttogether.payment.domain.Payment;
 import com.gifttogether.payment.repository.PaymentRepository;
 import com.gifttogether.funding.domain.FundingStatus;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -103,5 +106,19 @@ public class ContributionService {
         payment.cancel();
         funding.cancelContribution(contribution.getAmount());
         contribution.cancel();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ContributionResponse> getContributions(Long fundingId) {
+
+        if (!fundingRepository.existsById(fundingId)) {
+            throw new FundingNotFoundException();
+        }
+
+        return contributionRepository
+                .findAllByFundingId(fundingId)
+                .stream()
+                .map(ContributionResponse::from)
+                .toList();
     }
 }
