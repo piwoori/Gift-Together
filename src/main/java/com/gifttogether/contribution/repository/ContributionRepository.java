@@ -17,4 +17,9 @@ public interface ContributionRepository
             Long fundingId,
             ContributionStatus status
     );
+
+    long countByFundingIdAndStatus(
+            Long fundingId,
+            ContributionStatus status
+    );
 }

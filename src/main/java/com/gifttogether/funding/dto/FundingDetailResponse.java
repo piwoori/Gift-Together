@@ -17,10 +17,14 @@ public record FundingDetailResponse(
         Long remainingAmount,
         FundingStatus status,
         String message,
-        LocalDateTime expiredAt
+        LocalDateTime expiredAt,
+        long participantCount
 ) {
 
-    public static FundingDetailResponse from(Funding funding) {
+    public static FundingDetailResponse from(
+            Funding funding,
+            long participantCount
+    ) {
         return new FundingDetailResponse(
                 funding.getId(),
                 funding.getReceiver().getId(),
@@ -33,7 +37,8 @@ public record FundingDetailResponse(
                 funding.getTargetAmount() - funding.getCurrentAmount(),
                 funding.getStatus(),
                 funding.getMessage(),
-                funding.getExpiredAt()
+                funding.getExpiredAt(),
+                participantCount
         );
     }
 }

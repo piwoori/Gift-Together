@@ -3,6 +3,8 @@ package com.gifttogether.funding.service;
 import java.util.List;
 import java.time.LocalDateTime;
 
+import com.gifttogether.contribution.domain.ContributionStatus;
+import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.BadRequestException;
 import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.funding.domain.Funding;
@@ -45,10 +47,20 @@ public class FundingService {
 
     @Transactional(readOnly = true)
     public FundingDetailResponse getFunding(Long fundingId) {
+
         Funding funding = fundingRepository.findById(fundingId)
                 .orElseThrow(FundingNotFoundException::new);
 
-        return FundingDetailResponse.from(funding);
+        long participantCount =
+                contributionRepository.countByFundingIdAndStatus(
+                        fundingId,
+                        ContributionStatus.COMPLETED
+                );
+
+        return FundingDetailResponse.from(
+                funding,
+                participantCount
+        );
     }
 
     @Transactional
