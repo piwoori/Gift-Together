@@ -64,6 +64,16 @@ public class Contribution {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void fail() {
+        if (this.status != ContributionStatus.PENDING) {
+            throw new ConflictException(
+                    "대기 중인 참여만 실패 처리할 수 있습니다."
+            );
+        }
+
+        this.status = ContributionStatus.FAILED;
+    }
+
     public void cancel() {
         if (this.status != ContributionStatus.COMPLETED) {
             throw new ConflictException("완료된 참여만 취소할 수 있습니다.");

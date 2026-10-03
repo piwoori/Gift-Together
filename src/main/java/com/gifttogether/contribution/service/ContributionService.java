@@ -62,6 +62,7 @@ public class ContributionService {
 
         if (request.simulatePaymentFailure()) {
             payment.fail();
+            savedContribution.fail();
             paymentRepository.save(payment);
 
             return ContributionCreateResponse.from(savedContribution);
