@@ -78,30 +78,43 @@ public class ContributionService {
     }
 
     @Transactional
-    public void cancelContribution(Long contributionId, Long userId) {
+    public void cancelContribution(
+            Long fundingId,
+            Long contributionId,
+            Long userId
+    ) {
+        Contribution contribution = contributionRepository
+                .findById(contributionId)
+                .orElseThrow(ContributionNotFoundException::new);
 
-        Contribution contribution =
-                contributionRepository.findById(contributionId)
-                        .orElseThrow(ContributionNotFoundException::new);
+        // URL의 fundingId와 실제 참여의 fundingId가 일치하는지 확인
+        if (!contribution.getFunding().getId().equals(fundingId)) {
+            throw new ContributionNotFoundException();
+        }
 
         if (!contribution.getContributor().getId().equals(userId)) {
-            throw new ForbiddenException("본인의 참여만 취소할 수 있습니다.");
+            throw new ForbiddenException(
+                    "본인의 참여만 취소할 수 있습니다."
+            );
         }
 
         Funding funding = fundingRepository
-                .findByIdWithLock(contribution.getFunding().getId())
+                .findByIdWithLock(fundingId)
                 .orElseThrow(FundingNotFoundException::new);
 
         if (funding.getStatus() != FundingStatus.OPEN) {
             throw new ConflictException(
-                    "진행 중인 펀딩에서만 참여를 취소할 수 있습니다."
+                    "진행 중인 펀딩의 참여만 취소할 수 있습니다."
             );
         }
 
         Payment payment = paymentRepository
                 .findByContributionId(contributionId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("결제 내역을 찾을 수 없습니다."));
+                        new IllegalArgumentException(
+                                "결제 내역을 찾을 수 없습니다."
+                        )
+                );
 
         payment.cancel();
         funding.cancelContribution(contribution.getAmount());

@@ -44,6 +44,7 @@ public class ContributionController {
             @RequestHeader("X-USER-ID") Long userId
     ) {
         contributionService.cancelContribution(
+                fundingId,
                 contributionId,
                 userId
         );
