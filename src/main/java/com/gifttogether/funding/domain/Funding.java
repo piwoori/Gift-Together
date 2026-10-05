@@ -18,11 +18,15 @@ import java.time.LocalDateTime;
 public class Funding {
 
     public void contribute(Long amount) {
+        contribute(amount, LocalDateTime.now());
+    }
+
+    public void contribute(Long amount, LocalDateTime now) {
         if (this.status != FundingStatus.OPEN) {
             throw new ConflictException("진행 중인 펀딩이 아닙니다.");
         }
 
-        if (LocalDateTime.now().isAfter(this.expiredAt)) {
+        if (!now.isBefore(expiredAt)) {
             throw new ConflictException("마감된 펀딩입니다.");
         }
 
@@ -30,10 +34,13 @@ public class Funding {
             throw new BadRequestException("최소 참여 금액은 1,000원입니다.");
         }
 
-        long remainingAmount = this.targetAmount - this.currentAmount;
+        long remainingAmount =
+                this.targetAmount - this.currentAmount;
 
         if (amount > remainingAmount) {
-            throw new BadRequestException("남은 금액을 초과할 수 없습니다.");
+            throw new BadRequestException(
+                    "남은 금액을 초과할 수 없습니다."
+            );
         }
 
         this.currentAmount += amount;
@@ -42,7 +49,7 @@ public class Funding {
             this.status = FundingStatus.COMPLETED;
         }
 
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = now;
     }
 
     @Id
