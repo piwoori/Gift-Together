@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ContributionHistory from "./ContributionHistory";
 
 type Funding = {
     fundingId: number;
@@ -153,6 +154,12 @@ export default async function FundingDetailPage({
                             이 선물에 참여하기 🎁
                         </Link>
                     )}
+
+                    <ContributionHistory
+                        fundingId={funding.fundingId}
+                        fundingStatus={funding.status}
+                    />
+                    
                 </section>
             </div>
         </main>
