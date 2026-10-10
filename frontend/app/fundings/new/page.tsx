@@ -23,7 +23,9 @@ function FundingCreateForm() {
             return;
         }
 
-        if (!expiredAt || new Date(expiredAt).getTime() <= Date.now()) {
+        const deadline = new Date(expiredAt).getTime();
+
+        if (!expiredAt || !Number.isFinite(deadline) || deadline <= Date.now()) {
             setError("현재보다 미래의 마감일을 선택해 주세요.");
             return;
         }
@@ -36,6 +38,7 @@ function FundingCreateForm() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "X-USER-ID": "1",
                 },
                 body: JSON.stringify({
                     productId,
