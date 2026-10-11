@@ -112,7 +112,7 @@ export default function ContributePage() {
                                 id="amount"
                                 type="number"
                                 min="1000"
-                                step="1000"
+                                step="1"
                                 required
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
@@ -129,7 +129,9 @@ export default function ContributePage() {
                                 <button
                                     key={value}
                                     type="button"
-                                    onClick={() => setAmount(String(value))}
+                                    onClick={() =>
+                                        setAmount((prev) => String((Number(prev) || 0) + value))
+                                    }
                                     className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-medium text-gray-700"
                                 >
                                     +{(value / 10000).toLocaleString()}만원
