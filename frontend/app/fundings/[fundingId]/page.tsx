@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ContributionHistory from "./ContributionHistory";
 import FundingCompleted from "./FundingCompleted";
+import FundingCancelButton from "./FundingCancelButton";
 
 type Funding = {
     fundingId: number;
@@ -162,6 +163,10 @@ export default async function FundingDetailPage({
                             이 선물에 참여하기 🎁
                         </Link>
                     ) : null}
+
+                    {funding.status === "OPEN" && (
+                        <FundingCancelButton fundingId={funding.fundingId} />
+                    )}
 
 
                     <ContributionHistory
