@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ContributionHistory from "./ContributionHistory";
+import FundingCompleted from "./FundingCompleted";
 
 type Funding = {
     fundingId: number;
@@ -146,20 +147,28 @@ export default async function FundingDetailPage({
                         선물 받는 사람의 카카오머니로 전달됩니다.
                     </div>
 
-                    {funding.status === "OPEN" && (
+
+                    {funding.status === "COMPLETED" ? (
+                        <FundingCompleted
+                            productName={funding.productName}
+                            targetAmount={funding.targetAmount}
+                            participantCount={funding.participantCount}
+                        />
+                    ) : funding.status === "OPEN" ? (
                         <Link
                             href={`/fundings/${funding.fundingId}/contribute`}
                             className="block w-full rounded-xl bg-[#328c82] py-4 text-center font-semibold text-white"
                         >
                             이 선물에 참여하기 🎁
                         </Link>
-                    )}
+                    ) : null}
+
 
                     <ContributionHistory
                         fundingId={funding.fundingId}
                         fundingStatus={funding.status}
                     />
-                    
+
                 </section>
             </div>
         </main>
