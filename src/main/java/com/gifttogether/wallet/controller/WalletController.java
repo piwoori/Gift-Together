@@ -7,6 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.gifttogether.wallet.dto.WalletTransactionResponse;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/wallet")
@@ -32,5 +35,12 @@ public class WalletController {
                 walletService.getWallet(userId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/transactions")
+    public ResponseEntity<List<WalletTransactionResponse>> getTransactions(
+            @RequestHeader("X-USER-ID") Long userId
+    ) {
+        return ResponseEntity.ok(walletService.getTransactions(userId));
     }
 }

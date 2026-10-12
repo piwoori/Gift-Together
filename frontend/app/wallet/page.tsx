@@ -8,10 +8,21 @@ type Wallet = {
     balance: number;
 };
 
+type WalletTransaction = {
+    transactionId: number;
+    fundingId: number;
+    amount: number;
+    type: "FUNDING_EXPIRED_REWARD";
+    createdAt: string;
+};
+
 export default function WalletPage() {
     const [balance, setBalance] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+    const [transactionsLoading, setTransactionsLoading] = useState(true);
+    const [transactionsError, setTransactionsError] = useState("");
 
     useEffect(() => {
         async function loadWallet() {
@@ -37,6 +48,30 @@ export default function WalletPage() {
         }
 
         loadWallet();
+
+        async function loadTransactions() {
+            try {
+                const response = await fetch("/api/wallet/transactions", {
+                    headers: {
+                        "X-USER-ID": "1",
+                    },
+                    cache: "no-store",
+                });
+
+                if (!response.ok) {
+                    throw new Error("거래 내역 조회 실패");
+                }
+
+                const data: WalletTransaction[] = await response.json();
+                setTransactions(data);
+            } catch {
+                setTransactionsError("적립 내역을 불러오지 못했습니다.");
+            } finally {
+                setTransactionsLoading(false);
+            }
+        }
+
+        loadTransactions();
     }, []);
 
     return (
@@ -75,6 +110,58 @@ export default function WalletPage() {
                             </p>
                         )}
                     </div>
+
+
+                    <div className="rounded-2xl border border-gray-100 p-5">
+                        <div className="mb-5 flex items-center justify-between">
+                            <h2 className="font-bold text-gray-900">
+                                🎁 선물 지갑 적립 내역
+                            </h2>
+
+                            <span className="text-sm text-gray-500">
+                              {transactions.length}건
+                            </span>
+                        </div>
+
+                        {transactionsLoading ? (
+                            <p className="text-sm text-gray-500">
+                                적립 내역을 불러오는 중...
+                            </p>
+                        ) : transactionsError ? (
+                            <p role="alert" className="text-sm text-red-600">
+                                {transactionsError}
+                            </p>
+                        ) : transactions.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                                아직 적립 내역이 없어요.
+                            </p>
+                        ) : (
+                            <div className="space-y-4">
+                                {transactions.map((transaction) => (
+                                    <div
+                                        key={transaction.transactionId}
+                                        className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0"
+                                    >
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-900">
+                                                공동 선물 펀딩 마감 적립
+                                            </p>
+
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                펀딩 #{transaction.fundingId} ·{" "}
+                                                {transaction.createdAt.slice(0, 10)}
+                                            </p>
+                                        </div>
+
+                                        <p className="font-bold text-[#328c82]">
+                                            +{transaction.amount.toLocaleString()}원
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
 
                     <div className="rounded-xl bg-gray-50 p-5 text-sm leading-7 text-gray-600">
                         공동 선물 펀딩이 목표 금액을 달성하지 못한 채
