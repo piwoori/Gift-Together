@@ -19,6 +19,23 @@ type Props = {
 
 const CURRENT_USER_ID = 1;
 
+function getContributionStatusLabel(status: string) {
+    switch (status) {
+        case "COMPLETED":
+            return "참여 완료";
+        case "CANCELLED":
+            return "참여 취소";
+        case "REFUNDED":
+            return "환불 완료";
+        case "FAILED":
+            return "결제 실패";
+        case "PENDING":
+            return "결제 대기";
+        default:
+            return status;
+    }
+}
+
 export default function ContributionHistory({
                                                 fundingId,
                                                 fundingStatus,
@@ -106,10 +123,6 @@ export default function ContributionHistory({
         }
     }
 
-    const completed = contributions.filter(
-        (item) => item.status === "COMPLETED"
-    );
-
     return (
         <section className="mt-8 rounded-2xl border border-gray-100 bg-white p-5">
             <div className="mb-5 flex items-center justify-between">
@@ -118,7 +131,7 @@ export default function ContributionHistory({
                 </h2>
 
                 <span className="text-sm text-gray-500">
-          {completed.length}건
+          {contributions.length}건
         </span>
             </div>
 
@@ -128,20 +141,22 @@ export default function ContributionHistory({
                 </p>
             )}
 
-            {!loading && completed.length === 0 && (
+            {!loading && contributions.length === 0 && (
                 <p className="text-sm text-gray-500">
                     아직 참여한 사람이 없어요.
                 </p>
             )}
 
             <div className="space-y-4">
-                {completed.map((item) => {
+                {contributions.map((item) => {
                     const isMine =
                         !item.anonymous &&
                         item.contributorId === CURRENT_USER_ID;
 
                     const canCancel =
-                        isMine && fundingStatus === "OPEN";
+                        isMine &&
+                        item.status === "COMPLETED" &&
+                        fundingStatus === "OPEN";
 
                     return (
                         <div
@@ -154,7 +169,7 @@ export default function ContributionHistory({
                                 </p>
 
                                 <p className="mt-1 text-sm text-gray-500">
-                                    {item.amount.toLocaleString()}원 · 참여 완료
+                                    {item.amount.toLocaleString()}원 · {getContributionStatusLabel(item.status)}
                                 </p>
                             </div>
 
