@@ -5,6 +5,7 @@ import FundingCancelButton from "./FundingCancelButton";
 
 type Funding = {
     fundingId: number;
+    receiverId: number;
     receiverNickname: string;
     productName: string;
     targetAmount: number;
@@ -115,12 +116,46 @@ export default async function FundingDetailPage({
                         </div>
                     </div>
 
+
+                    {funding.status === "EXPIRED" && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                            <h2 className="text-lg font-bold text-gray-900">
+                                🎁 펀딩이 마감되었어요
+                            </h2>
+
+                            <p className="mt-3 text-sm leading-6 text-gray-600">
+                                목표 금액을 달성하지 못해 모인 금액이
+                                선물 받는 사람의 모의 지갑에 적립되었어요.
+                            </p>
+
+                            <div className="mt-5 rounded-xl bg-white p-4">
+                                <p className="text-xs text-gray-500">
+                                    지갑 적립 금액
+                                </p>
+
+                                <p className="mt-2 text-2xl font-bold text-[#328c82]">
+                                    {funding.currentAmount.toLocaleString()}원
+                                </p>
+                            </div>
+
+                            {funding.receiverId === 1 && (
+                                <Link
+                                    href="/wallet"
+                                    className="mt-5 block rounded-xl bg-[#328c82] py-3 text-center font-semibold text-white"
+                                >
+                                    내 선물 지갑 확인하기 →
+                                </Link>
+                            )}
+                        </div>
+                    )}
+
+
                     <div className="space-y-3 rounded-2xl bg-gray-50 p-5 text-sm">
                         <div className="flex justify-between">
                             <span className="text-gray-500">참여 건수</span>
                             <span className="font-semibold">
-                {funding.participantCount}건
-              </span>
+                                {funding.participantCount}건
+                            </span>
                         </div>
 
                         <div className="flex justify-between">
@@ -143,9 +178,10 @@ export default async function FundingDetailPage({
                     )}
 
                     <div className="rounded-xl bg-gray-50 p-4 text-xs leading-6 text-gray-500">
-                        목표 금액을 달성하면 상품 선물이 완료됩니다.
+                        목표 금액을 달성하면 모의 선물 구매가 완료됩니다.
                         목표 금액을 달성하지 못하면 모인 금액은
-                        선물 받는 사람의 카카오머니로 전달됩니다.
+                        선물 받는 사람의 모의 지갑에 적립됩니다.
+                        실제 결제 및 카카오머니 연동은 지원하지 않습니다.
                     </div>
 
 
