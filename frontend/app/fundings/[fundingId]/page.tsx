@@ -1,7 +1,7 @@
 import Link from "next/link";
 import ContributionHistory from "./ContributionHistory";
 import FundingCompleted from "./FundingCompleted";
-import FundingCancelButton from "./FundingCancelButton";
+import FundingDeadlineActions from "./FundingDeadlineActions";
 
 type Funding = {
     fundingId: number;
@@ -124,8 +124,9 @@ export default async function FundingDetailPage({
                             </h2>
 
                             <p className="mt-3 text-sm leading-6 text-gray-600">
-                                목표 금액을 달성하지 못해 모인 금액이
-                                선물 받는 사람의 모의 지갑에 적립되었어요.
+                                {funding.currentAmount > 0
+                                    ? "목표 금액을 달성하지 못해 모인 금액이 선물 받는 사람의 모의 지갑에 적립되었어요."
+                                    : "목표 금액을 달성하지 못한 채 펀딩이 마감되었어요. 참여 금액이 없어 지갑에 적립된 금액은 없어요."}
                             </p>
 
                             <div className="mt-5 rounded-xl bg-white p-4">
@@ -138,7 +139,7 @@ export default async function FundingDetailPage({
                                 </p>
                             </div>
 
-                            {funding.receiverId === 1 && (
+                            {funding.receiverId === 1 && funding.currentAmount > 0 && (
                                 <Link
                                     href="/wallet"
                                     className="mt-5 block rounded-xl bg-[#328c82] py-3 text-center font-semibold text-white"
@@ -185,24 +186,19 @@ export default async function FundingDetailPage({
                     </div>
 
 
-                    {funding.status === "COMPLETED" ? (
+                    {funding.status === "COMPLETED" && (
                         <FundingCompleted
                             productName={funding.productName}
                             targetAmount={funding.targetAmount}
                             participantCount={funding.participantCount}
                         />
-                    ) : funding.status === "OPEN" ? (
-                        <Link
-                            href={`/fundings/${funding.fundingId}/contribute`}
-                            className="block w-full rounded-xl bg-[#328c82] py-4 text-center font-semibold text-white"
-                        >
-                            이 선물에 참여하기 🎁
-                        </Link>
-                    ) : null}
-
-                    {funding.status === "OPEN" && (
-                        <FundingCancelButton fundingId={funding.fundingId} />
                     )}
+
+                    <FundingDeadlineActions
+                        fundingId={funding.fundingId}
+                        expiredAt={funding.expiredAt}
+                        status={funding.status}
+                    />
 
 
                     <ContributionHistory
