@@ -51,6 +51,9 @@ export default function ContributionHistory({
         let active = true;
 
         async function loadContributions() {
+            setLoading(true);
+            setError("");
+
             try {
                 const response = await fetch(
                     `/api/fundings/${fundingId}/contributions`,
@@ -82,7 +85,7 @@ export default function ContributionHistory({
         return () => {
             active = false;
         };
-    }, [fundingId]);
+    }, [fundingId, fundingStatus]);
 
     async function handleCancel(contributionId: number) {
         if (!window.confirm("이 선물 참여를 취소하시겠습니까?")) {
