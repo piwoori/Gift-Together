@@ -204,6 +204,7 @@ export default async function FundingDetailPage({
                     <ContributionHistory
                         fundingId={funding.fundingId}
                         fundingStatus={funding.status}
+                        expiredAt={funding.expiredAt}
                     />
 
                 </section>

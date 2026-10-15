@@ -15,6 +15,7 @@ type Contribution = {
 type Props = {
     fundingId: number;
     fundingStatus: string;
+    expiredAt: string;
 };
 
 const CURRENT_USER_ID = 1;
@@ -39,6 +40,7 @@ function getContributionStatusLabel(status: string) {
 export default function ContributionHistory({
                                                 fundingId,
                                                 fundingStatus,
+                                                expiredAt,
                                             }: Props) {
     const router = useRouter();
 
@@ -156,10 +158,14 @@ export default function ContributionHistory({
                         !item.anonymous &&
                         item.contributorId === CURRENT_USER_ID;
 
+                    const isDeadlinePassed =
+                        new Date(expiredAt).getTime() <= Date.now();
+
                     const canCancel =
                         isMine &&
                         item.status === "COMPLETED" &&
-                        fundingStatus === "OPEN";
+                        fundingStatus === "OPEN" &&
+                        !isDeadlinePassed;
 
                     return (
                         <div
