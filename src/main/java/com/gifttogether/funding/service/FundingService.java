@@ -10,6 +10,7 @@ import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.dto.FundingCreateRequest;
 import com.gifttogether.funding.dto.FundingCreateResponse;
+import com.gifttogether.funding.dto.FundingListResponse;
 import com.gifttogether.funding.repository.FundingRepository;
 import com.gifttogether.product.domain.Product;
 import com.gifttogether.product.repository.ProductRepository;
@@ -44,6 +45,18 @@ public class FundingService {
     private final PaymentRepository paymentRepository;
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
+
+
+    @Transactional(readOnly = true)
+    public List<FundingListResponse> getMyFundings(Long userId) {
+
+        return fundingRepository
+                .findAllByReceiverIdOrderByIdDesc(userId)
+                .stream()
+                .map(FundingListResponse::from)
+                .toList();
+    }
+
 
     @Transactional(readOnly = true)
     public FundingDetailResponse getFunding(Long fundingId) {

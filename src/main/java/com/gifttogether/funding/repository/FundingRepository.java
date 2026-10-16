@@ -24,4 +24,6 @@ public interface FundingRepository extends JpaRepository<Funding, Long> {
             FundingStatus status,
             LocalDateTime now
     );
+
+    List<Funding> findAllByReceiverIdOrderByIdDesc(Long receiverId);
 }

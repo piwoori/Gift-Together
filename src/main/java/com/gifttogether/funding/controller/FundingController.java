@@ -3,6 +3,7 @@ package com.gifttogether.funding.controller;
 import com.gifttogether.funding.dto.FundingCreateRequest;
 import com.gifttogether.funding.dto.FundingCreateResponse;
 import com.gifttogether.funding.dto.FundingDetailResponse;
+import com.gifttogether.funding.dto.FundingListResponse;
 import com.gifttogether.funding.service.FundingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/fundings")
@@ -24,9 +27,19 @@ public class FundingController {
     private final FundingService fundingService;
 
     @Operation(
-            summary = "펀딩 상세 조회",
-            description = "펀딩의 목표 금액, 현재 금액, 남은 금액, 상태 및 참여자 수를 조회합니다."
+            summary = "내 펀딩 목록 조회",
+            description = "현재 사용자가 생성한 공동 선물 펀딩을 최신순으로 조회합니다."
     )
+    @GetMapping("/my")
+    public ResponseEntity<List<FundingListResponse>> getMyFundings(
+            @RequestHeader("X-USER-ID") Long userId
+    ) {
+        List<FundingListResponse> response =
+                fundingService.getMyFundings(userId);
+
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{fundingId}")
     public ResponseEntity<FundingDetailResponse> getFunding(
             @PathVariable Long fundingId
