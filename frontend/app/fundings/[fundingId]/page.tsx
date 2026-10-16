@@ -1,7 +1,10 @@
 import Link from "next/link";
 import ContributionHistory from "./ContributionHistory";
+import FundingCancelActions from "./FundingCancelActions";
+import FundingCancelButton from "./FundingCancelButton";
 import FundingCompleted from "./FundingCompleted";
 import FundingDeadlineActions from "./FundingDeadlineActions";
+import ShareFunding from "./ShareFunding";
 
 type Funding = {
     fundingId: number;
@@ -200,11 +203,21 @@ export default async function FundingDetailPage({
                         status={funding.status}
                     />
 
+                    <ShareFunding
+                        fundingId={funding.fundingId}
+                        productName={funding.productName}
+                    />
 
                     <ContributionHistory
                         fundingId={funding.fundingId}
                         fundingStatus={funding.status}
                         expiredAt={funding.expiredAt}
+                    />
+
+                    <FundingCancelActions
+                        fundingId={funding.fundingId}
+                        expiredAt={funding.expiredAt}
+                        status={funding.status}
                     />
 
                 </section>

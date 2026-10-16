@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import FundingCancelButton from "./FundingCancelButton";
 
 type Props = {
     fundingId: number;
@@ -13,8 +12,8 @@ type Props = {
 };
 
 function getDeadlineTime(expiredAt: string): number {
-    // 백엔드 LocalDateTime은 한국 시간 기준이라고 가정
     const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(expiredAt);
+
     const dateString = hasTimezone
         ? expiredAt
         : `${expiredAt}+09:00`;
@@ -36,8 +35,7 @@ export default function FundingDeadlineActions({
         const deadline = getDeadlineTime(expiredAt);
 
         function checkDeadline() {
-            const passed = Date.now() >= deadline;
-            setDeadlinePassed(passed);
+            setDeadlinePassed(Date.now() >= deadline);
         }
 
         checkDeadline();
@@ -47,10 +45,8 @@ export default function FundingDeadlineActions({
         return () => window.clearInterval(interval);
     }, [expiredAt, status]);
 
-    // 완료/취소/만료된 펀딩에는 참여 버튼을 표시하지 않음
     if (status !== "OPEN") return null;
 
-    // 브라우저에서 마감 시각을 확인하기 전에는 버튼을 숨김
     if (deadlinePassed === null) return null;
 
     if (deadlinePassed) {
@@ -77,15 +73,11 @@ export default function FundingDeadlineActions({
     }
 
     return (
-        <div className="space-y-3">
-            <Link
-                href={`/fundings/${fundingId}/contribute`}
-                className="block w-full rounded-xl bg-[#328c82] py-4 text-center font-semibold text-white"
-            >
-                이 선물에 참여하기 🎁
-            </Link>
-
-            <FundingCancelButton fundingId={fundingId} />
-        </div>
+        <Link
+            href={`/fundings/${fundingId}/contribute`}
+            className="block w-full rounded-xl bg-[#328c82] py-4 text-center font-semibold text-white"
+        >
+            이 선물에 참여하기 🎁
+        </Link>
     );
 }
