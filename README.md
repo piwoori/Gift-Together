@@ -209,7 +209,48 @@ static PostgreSQLContainer<?> postgres =
 
 향후 서비스가 확장되어 다중 인스턴스 환경이나 높은 트래픽을 처리해야 한다면 락 범위와 트랜잭션 시간을 최소화하고, 분산 락이나 별도의 동시성 처리 구조도 검토할 수 있습니다.
 
+
+## 🖥 Frontend 구현
+
+Next.js와 TypeScript를 활용하여 공동 선물 펀딩의 주요 사용자 흐름을 웹 UI로 구현했습니다.
+
+### 주요 화면
+
+| 경로 | 기능 |
+|---|---|
+| `/` | 서비스 소개 및 메인 화면 |
+| `/wishlist` | 위시리스트 상품 조회 |
+| `/fundings/new` | 펀딩 생성 |
+| `/fundings` | 내 펀딩 목록 및 상태별 필터 |
+| `/fundings/{fundingId}` | 펀딩 상세, 진행률 및 참여 내역 |
+| `/fundings/{fundingId}/contribute` | 펀딩 참여 및 익명 여부 선택 |
+| `/wallet` | 모의 지갑 잔액 및 적립 내역 |
+
+### 사용자 경험 개선
+
+- 펀딩 상태에 따라 참여·취소 버튼 노출 제어
+- 마감 시간이 지난 펀딩의 참여·취소 UI 차단
+- 브라우저 공유 API를 이용한 펀딩 공유
+- 클립보드 API를 이용한 링크 복사
+- 펀딩 목록의 상태별 필터링
+- API 로딩 및 오류 상태 처리
+
+### 구현 범위
+
+현재 프론트엔드는 Mock 사용자 ID를 사용하며,
+실제 로그인·결제·카카오톡 연동은 구현하지 않았습니다.
+
+공유 기능은 웹 브라우저의 공유 API를 사용합니다.
+카카오톡 전용 공유 SDK와는 별개입니다.
+
 ## 🛠 Tech Stack
+
+### Frontend
+
+- Next.js 16
+- React
+- TypeScript
+- Tailwind CSS
 
 ### Backend
 
@@ -430,12 +471,14 @@ Swagger UI를 통해 API 명세 및 테스트가 가능합니다.
 |---|---|---|
 | `GET` | `/api/wishlist` | 위시리스트 조회 |
 | `POST` | `/api/fundings` | 펀딩 생성 |
+| `GET` | `/api/fundings/my` | 내 펀딩 목록 조회 |
 | `GET` | `/api/fundings/{fundingId}` | 펀딩 상세 조회 |
 | `POST` | `/api/fundings/{fundingId}/cancel` | 펀딩 취소 |
 | `POST` | `/api/fundings/{fundingId}/contributions` | 펀딩 참여 |
 | `GET` | `/api/fundings/{fundingId}/contributions` | 참여 내역 조회 |
 | `POST` | `/api/fundings/{fundingId}/contributions/{contributionId}/cancel` | 참여 취소 |
 | `GET` | `/api/wallet` | Wallet 조회 |
+| `GET` | `/api/wallet/transactions` | Wallet 적립 내역 조회 |
 
 현재 실제 로그인 대신 `X-USER-ID` 헤더를 사용하는 Mock 인증 방식을 사용합니다.
 
@@ -503,6 +546,16 @@ http://localhost:8080/v3/api-docs
 
 ## 🚀 Local Run
 
+### Frontend 실행
+
+백엔드 서버가 `localhost:8080`에서 실행 중인 상태에서:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ### Requirements
 
 - Java 17
@@ -551,5 +604,4 @@ http://localhost:8080
 - 실제 결제 시스템 연동
 - 실제 상품 및 위시리스트 서비스 연동
 - 알림 기능
-- 프론트엔드 구현
 - 운영 환경에서의 분산 동시성 제어 전략 검토
