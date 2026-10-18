@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +33,7 @@ public class ContributionController {
     @PostMapping
     public ResponseEntity<ContributionCreateResponse> contribute(
             @PathVariable Long fundingId,
-            @RequestHeader("X-USER-ID") Long userId,
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody ContributionCreateRequest request
     ) {
         ContributionCreateResponse response =
@@ -55,7 +56,7 @@ public class ContributionController {
     public ResponseEntity<Void> cancelContribution(
             @PathVariable Long fundingId,
             @PathVariable Long contributionId,
-            @RequestHeader("X-USER-ID") Long userId
+            @AuthenticationPrincipal Long userId
     ) {
         contributionService.cancelContribution(
                 fundingId,

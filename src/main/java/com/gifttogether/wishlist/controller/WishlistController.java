@@ -3,6 +3,7 @@ package com.gifttogether.wishlist.controller;
 import com.gifttogether.wishlist.dto.WishlistResponse;
 import com.gifttogether.wishlist.service.WishlistService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +30,7 @@ public class WishlistController {
     )
     @GetMapping
     public List<WishlistResponse> getWishlist(
-            @RequestHeader("X-USER-ID") Long userId
+            @AuthenticationPrincipal Long userId
     ) {
         return wishlistService.getWishlist(userId);
     }

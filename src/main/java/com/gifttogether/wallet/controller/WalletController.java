@@ -4,6 +4,7 @@ import com.gifttogether.wallet.dto.WalletResponse;
 import com.gifttogether.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +29,7 @@ public class WalletController {
     )
     @GetMapping
     public ResponseEntity<WalletResponse> getWallet(
-            @RequestHeader("X-USER-ID") Long userId
+            @AuthenticationPrincipal Long userId
     ) {
 
         WalletResponse response =
@@ -39,7 +40,7 @@ public class WalletController {
 
     @GetMapping("/transactions")
     public ResponseEntity<List<WalletTransactionResponse>> getTransactions(
-            @RequestHeader("X-USER-ID") Long userId
+            @AuthenticationPrincipal Long userId
     ) {
         return ResponseEntity.ok(walletService.getTransactions(userId));
     }

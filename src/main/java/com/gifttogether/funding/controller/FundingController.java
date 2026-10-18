@@ -5,6 +5,7 @@ import com.gifttogether.funding.dto.FundingCreateResponse;
 import com.gifttogether.funding.dto.FundingDetailResponse;
 import com.gifttogether.funding.dto.FundingListResponse;
 import com.gifttogether.funding.service.FundingService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,7 +33,7 @@ public class FundingController {
     )
     @GetMapping("/my")
     public ResponseEntity<List<FundingListResponse>> getMyFundings(
-            @RequestHeader("X-USER-ID") Long userId
+            @AuthenticationPrincipal Long userId
     ) {
         List<FundingListResponse> response =
                 fundingService.getMyFundings(userId);
@@ -56,7 +57,7 @@ public class FundingController {
     )
     @PostMapping
     public ResponseEntity<FundingCreateResponse> createFunding(
-            @RequestHeader("X-USER-ID") Long userId,
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody FundingCreateRequest request
     ) {
         FundingCreateResponse response =
@@ -74,7 +75,7 @@ public class FundingController {
     @PostMapping("/{fundingId}/cancel")
     public ResponseEntity<Void> cancelFunding(
             @PathVariable Long fundingId,
-            @RequestHeader("X-USER-ID") Long userId
+            @AuthenticationPrincipal Long userId
     ) {
         fundingService.cancelFunding(fundingId, userId);
 

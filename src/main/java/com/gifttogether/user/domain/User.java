@@ -1,3 +1,4 @@
+
 package com.gifttogether.user.domain;
 
 import jakarta.persistence.*;
@@ -23,12 +24,22 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(name = "password_hash", length = 255)
+    private String passwordHash;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    // 기존 테스트 및 더미 사용자 생성 호환용
     public User(String nickname, String email) {
         this.nickname = nickname;
         this.email = email;
         this.createdAt = LocalDateTime.now();
+    }
+
+    // 신규 회원가입용
+    public User(String nickname, String email, String passwordHash) {
+        this(nickname, email);
+        this.passwordHash = passwordHash;
     }
 }
