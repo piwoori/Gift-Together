@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { getAccessToken } from "@/lib/auth";
 
 type FundingStatus = "OPEN" | "COMPLETED" | "EXPIRED" | "CANCELLED";
 type FundingFilter = "ALL" | FundingStatus;
@@ -42,10 +43,17 @@ export default function MyFundingsPage() {
 
         async function loadFundings() {
             try {
+                const token = getAccessToken();
+
+                if (!token) {
+                    throw new Error("로그인이 필요합니다.");
+                }
+
                 const response = await fetch("/api/fundings/my", {
-                    headers: { "X-USER-ID": "1" },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                     cache: "no-store",
-                    signal: controller.signal,
                 });
 
                 if (!response.ok) {
