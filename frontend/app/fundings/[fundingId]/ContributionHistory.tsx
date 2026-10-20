@@ -48,6 +48,19 @@ export default function ContributionHistory({
     const [loading, setLoading] = useState(true);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [error, setError] = useState("");
+    const [now, setNow] = useState<number | null>(null);
+
+    useEffect(() => {
+        function updateNow() {
+            setNow(Date.now());
+        }
+
+        updateNow();
+
+        const interval = window.setInterval(updateNow, 1000);
+
+        return () => window.clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -159,7 +172,9 @@ export default function ContributionHistory({
                         item.contributorId === CURRENT_USER_ID;
 
                     const isDeadlinePassed =
-                        new Date(expiredAt).getTime() <= Date.now();
+                        now === null ||
+                        !Number.isFinite(new Date(expiredAt).getTime()) ||
+                        new Date(expiredAt).getTime() <= now;
 
                     const canCancel =
                         isMine &&

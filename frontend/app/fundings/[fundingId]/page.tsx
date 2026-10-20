@@ -1,7 +1,6 @@
 import Link from "next/link";
 import ContributionHistory from "./ContributionHistory";
 import FundingCancelActions from "./FundingCancelActions";
-import FundingCancelButton from "./FundingCancelButton";
 import FundingCompleted from "./FundingCompleted";
 import FundingDeadlineActions from "./FundingDeadlineActions";
 import ShareFunding from "./ShareFunding";

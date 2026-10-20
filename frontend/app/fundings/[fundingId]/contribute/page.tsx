@@ -106,13 +106,16 @@ export default function ContributePage() {
         !fundingLoading &&
         funding?.status === "OPEN" &&
         !deadlinePassed &&
-        Number.isFinite(getDeadlineTime(funding.expiredAt)) &&
-        Date.now() < getDeadlineTime(funding.expiredAt);
+        Number.isFinite(getDeadlineTime(funding.expiredAt));
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
-        if (!canContribute || !funding) {
+        if (
+            !canContribute ||
+            !funding ||
+            Date.now() >= getDeadlineTime(funding.expiredAt)
+        ) {
             setError("현재 참여할 수 없는 펀딩입니다.");
             return;
         }
