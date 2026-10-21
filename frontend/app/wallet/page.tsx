@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 type Wallet = {
@@ -27,12 +28,7 @@ export default function WalletPage() {
     useEffect(() => {
         async function loadWallet() {
             try {
-                const response = await fetch("/api/wallet", {
-                    headers: {
-                        "X-USER-ID": "1",
-                    },
-                    cache: "no-store",
-                });
+                const response = await apiFetch("/api/wallet");
 
                 if (!response.ok) {
                     throw new Error("지갑 조회 실패");
@@ -51,12 +47,7 @@ export default function WalletPage() {
 
         async function loadTransactions() {
             try {
-                const response = await fetch("/api/wallet/transactions", {
-                    headers: {
-                        "X-USER-ID": "1",
-                    },
-                    cache: "no-store",
-                });
+                const response = await apiFetch("/api/wallet/transactions");
 
                 if (!response.ok) {
                     throw new Error("거래 내역 조회 실패");
