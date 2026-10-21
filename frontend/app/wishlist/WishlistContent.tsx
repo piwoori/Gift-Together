@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 
 type WishlistItem = {
     wishlistItemId: number;
@@ -9,12 +13,7 @@ type WishlistItem = {
 };
 
 async function getWishlist(): Promise<WishlistItem[]> {
-    const response = await fetch("http://localhost:8080/api/wishlist", {
-        headers: {
-            "X-USER-ID": "1",
-        },
-        cache: "no-store",
-    });
+    const response = await apiFetch("/api/wishlist");
 
     if (!response.ok) {
         throw new Error("위시리스트를 불러오지 못했습니다.");
@@ -23,15 +22,38 @@ async function getWishlist(): Promise<WishlistItem[]> {
     return response.json();
 }
 
-export default async function WishlistContent() {
-    let items: WishlistItem[] = [];
-    let error = false;
+export default function WishlistContent() {
+    const [items, setItems] = useState<WishlistItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
-    try {
-        items = await getWishlist();
-    } catch {
-        error = true;
-    }
+    useEffect(() => {
+        let active = true;
+
+        async function loadWishlist() {
+            try {
+                const data = await getWishlist();
+
+                if (active) {
+                    setItems(data);
+                }
+            } catch {
+                if (active) {
+                    setError(true);
+                }
+            } finally {
+                if (active) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        loadWishlist();
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     return (
         <main className="min-h-screen bg-[#f8faf9]">
@@ -52,7 +74,11 @@ export default async function WishlistContent() {
                         친구들과 함께 선물받아 보세요.
                     </p>
 
-                    {error ? (
+                    {loading ? (
+                        <p className="mt-8 text-sm text-gray-500">
+                            위시리스트를 불러오는 중...
+                        </p>
+                    ) : error ? (
                         <p className="mt-8 rounded-xl bg-red-50 p-4 text-sm text-red-600">
                             위시리스트를 불러오지 못했습니다.
                             Spring Boot 서버가 실행 중인지 확인해 주세요.
