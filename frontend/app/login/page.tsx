@@ -23,7 +23,7 @@ export default function LoginPage() {
 
             saveAccessToken(response.accessToken);
 
-            router.push("/fundings");
+            router.push("/fundings/new?productId=1");
         } catch (error) {
             setError(
                 error instanceof Error

@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -141,13 +142,12 @@ export default function ContributePage() {
         setError("");
 
         try {
-            const response = await fetch(
+            const response = await apiFetch(
                 `/api/fundings/${fundingId}/contributions`,
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "X-USER-ID": "1",
                     },
                     body: JSON.stringify({
                         amount: contributionAmount,
