@@ -45,6 +45,8 @@ public class SecurityConfig {
                                 HttpMethod.GET,
                                 "/api/fundings/*/contributions"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/fundings/*")
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
