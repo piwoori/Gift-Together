@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 
@@ -34,11 +35,10 @@ function FundingCreateForm() {
         setError("");
 
         try {
-            const response = await fetch("/api/fundings", {
+            const response = await apiFetch("/api/fundings", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-USER-ID": "1",
                 },
                 body: JSON.stringify({
                     productId,
