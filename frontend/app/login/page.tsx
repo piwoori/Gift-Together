@@ -1,12 +1,20 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login, saveAccessToken } from "@/lib/auth";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const requestedNext = searchParams.get("next");
+    const nextPath =
+        requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+            ? requestedNext
+            : "/fundings";
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -23,7 +31,7 @@ export default function LoginPage() {
 
             saveAccessToken(response.accessToken);
 
-            router.push("/fundings/new?productId=1");
+            router.replace(nextPath);
         } catch (error) {
             setError(
                 error instanceof Error
@@ -111,5 +119,13 @@ export default function LoginPage() {
                 </Link>
             </p>
         </main>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<p>로그인 페이지를 불러오는 중...</p>}>
+            <LoginForm />
+        </Suspense>
     );
 }
