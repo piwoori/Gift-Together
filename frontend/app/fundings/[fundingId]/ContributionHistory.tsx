@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -18,7 +20,25 @@ type Props = {
     expiredAt: string;
 };
 
-const CURRENT_USER_ID = 1;
+function getCurrentUserId(): number | null {
+    const token = getAccessToken();
+
+    if (!token) return null;
+
+    try {
+        const payload = JSON.parse(
+            atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+        );
+
+        const userId = Number(payload.sub);
+
+        return Number.isSafeInteger(userId) && userId > 0
+            ? userId
+            : null;
+    } catch {
+        return null;
+    }
+}
 
 function getContributionStatusLabel(status: string) {
     switch (status) {
@@ -111,15 +131,17 @@ export default function ContributionHistory({
         setError("");
 
         try {
-            const response = await fetch(
+            const response = await apiFetch(
                 `/api/fundings/${fundingId}/contributions/${contributionId}/cancel`,
                 {
                     method: "POST",
-                    headers: {
-                        "X-USER-ID": String(CURRENT_USER_ID),
-                    },
                 }
             );
+
+            if (response.status === 401) {
+                router.push("/login");
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error("참여 취소 실패");
@@ -168,8 +190,8 @@ export default function ContributionHistory({
             <div className="space-y-4">
                 {contributions.map((item) => {
                     const isMine =
-                        !item.anonymous &&
-                        item.contributorId === CURRENT_USER_ID;
+                        item.contributorId !== null &&
+                        item.contributorId === getCurrentUserId();
 
                     const isDeadlinePassed =
                         now === null ||
