@@ -139,7 +139,9 @@ export default function ContributionHistory({
             );
 
             if (response.status === 401) {
-                router.push("/login");
+                router.push(
+                    `/login?next=${encodeURIComponent(`/fundings/${fundingId}`)}`
+                );
                 return;
             }
 
