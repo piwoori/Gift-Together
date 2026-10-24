@@ -215,6 +215,7 @@ export default async function FundingDetailPage({
 
                     <FundingCancelActions
                         fundingId={funding.fundingId}
+                        receiverId={funding.receiverId}
                         expiredAt={funding.expiredAt}
                         status={funding.status}
                     />
