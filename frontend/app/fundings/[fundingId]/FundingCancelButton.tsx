@@ -1,6 +1,6 @@
-
 "use client";
 
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -24,12 +24,12 @@ export default function FundingCancelButton({ fundingId }: Props) {
         setError("");
 
         try {
-            const response = await fetch(`/api/fundings/${fundingId}/cancel`, {
-                method: "POST",
-                headers: {
-                    "X-USER-ID": "1",
-                },
-            });
+            const response = await apiFetch(
+                `/api/fundings/${fundingId}/cancel`,
+                {
+                    method: "POST",
+                }
+            );
 
             if (!response.ok) {
                 const data = await response.json().catch(() => null);
