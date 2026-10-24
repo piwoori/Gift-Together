@@ -138,13 +138,6 @@ export default function ContributionHistory({
                 }
             );
 
-            if (response.status === 401) {
-                router.push(
-                    `/login?next=${encodeURIComponent(`/fundings/${fundingId}`)}`
-                );
-                return;
-            }
-
             if (!response.ok) {
                 throw new Error("참여 취소 실패");
             }
