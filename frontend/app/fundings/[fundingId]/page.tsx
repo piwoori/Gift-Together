@@ -4,6 +4,7 @@ import FundingCancelActions from "./FundingCancelActions";
 import FundingCompleted from "./FundingCompleted";
 import FundingDeadlineActions from "./FundingDeadlineActions";
 import ShareFunding from "./ShareFunding";
+import WalletLink from "./WalletLink";
 
 type Funding = {
     fundingId: number;
@@ -141,13 +142,8 @@ export default async function FundingDetailPage({
                                 </p>
                             </div>
 
-                            {funding.receiverId === 1 && funding.currentAmount > 0 && (
-                                <Link
-                                    href="/wallet"
-                                    className="mt-5 block rounded-xl bg-[#328c82] py-3 text-center font-semibold text-white"
-                                >
-                                    내 선물 지갑 확인하기 →
-                                </Link>
+                            {funding.currentAmount > 0 && (
+                                <WalletLink receiverId={funding.receiverId} />
                             )}
                         </div>
                     )}
