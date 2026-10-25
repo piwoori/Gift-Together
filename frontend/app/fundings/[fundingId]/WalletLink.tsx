@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getAccessToken } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 
 type Props = {
     receiverId: number;
@@ -12,29 +12,11 @@ export default function WalletLink({ receiverId }: Props) {
     const [isOwner, setIsOwner] = useState(false);
 
     useEffect(() => {
-        const token = getAccessToken();
-        if (!token) return;
+        const timeout = window.setTimeout(() => {
+            setIsOwner(getCurrentUserId() === receiverId);
+        }, 0);
 
-        try {
-            const payload = JSON.parse(
-                atob(
-                    token
-                        .split(".")[1]
-                        .replace(/-/g, "+")
-                        .replace(/_/g, "/")
-                )
-            );
-
-            const userId = Number(payload.sub);
-
-            const timeout = window.setTimeout(() => {
-                setIsOwner(userId === receiverId);
-            }, 0);
-
-            return () => window.clearTimeout(timeout);
-        } catch {
-            // 유효하지 않은 토큰이면 버튼을 표시하지 않음
-        }
+        return () => window.clearTimeout(timeout);
     }, [receiverId]);
 
     if (!isOwner) return null;
