@@ -74,3 +74,28 @@ export async function signup(
         throw new Error("회원가입에 실패했습니다. 입력 정보를 확인해 주세요.");
     }
 }
+
+export function getCurrentUserId(): number | null {
+    const token = getAccessToken();
+
+    if (!token) return null;
+
+    try {
+        const payload = JSON.parse(
+            atob(
+                token
+                    .split(".")[1]
+                    .replace(/-/g, "+")
+                    .replace(/_/g, "/")
+            )
+        );
+
+        const userId = Number(payload.sub);
+
+        return Number.isSafeInteger(userId) && userId > 0
+            ? userId
+            : null;
+    } catch {
+        return null;
+    }
+}
