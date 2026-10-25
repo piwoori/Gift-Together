@@ -1,7 +1,7 @@
 "use client";
 
 import { apiFetch } from "@/lib/api";
-import { getAccessToken } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -19,26 +19,6 @@ type Props = {
     fundingStatus: string;
     expiredAt: string;
 };
-
-function getCurrentUserId(): number | null {
-    const token = getAccessToken();
-
-    if (!token) return null;
-
-    try {
-        const payload = JSON.parse(
-            atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
-        );
-
-        const userId = Number(payload.sub);
-
-        return Number.isSafeInteger(userId) && userId > 0
-            ? userId
-            : null;
-    } catch {
-        return null;
-    }
-}
 
 function getContributionStatusLabel(status: string) {
     switch (status) {
