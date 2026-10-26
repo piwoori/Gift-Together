@@ -1,15 +1,11 @@
+import Header from "./components/Header";
 import Link from "next/link";
 
 export default function Home() {
   return (
       <main className="min-h-screen bg-[#f8faf9]">
         <div className="mx-auto max-w-md min-h-screen bg-white shadow-sm">
-          <header className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <span className="text-xl font-bold text-[#328c82]">
-            Gift Together
-          </span>
-            <span className="text-sm text-gray-500">공동 선물하기</span>
-          </header>
+          <Header />
 
           <section className="px-6 pt-16 pb-12">
           <span className="text-sm font-semibold text-[#328c82]">
