@@ -44,11 +44,20 @@ export default function ContributionHistory({
                                             }: Props) {
     const router = useRouter();
 
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [contributions, setContributions] = useState<Contribution[]>([]);
     const [loading, setLoading] = useState(true);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [error, setError] = useState("");
     const [now, setNow] = useState<number | null>(null);
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            setCurrentUserId(getCurrentUserId());
+        }, 0);
+
+        return () => window.clearTimeout(timeout);
+    }, []);
 
     useEffect(() => {
         function updateNow() {
@@ -165,8 +174,9 @@ export default function ContributionHistory({
             <div className="space-y-4">
                 {contributions.map((item) => {
                     const isMine =
+                        currentUserId !== null &&
                         item.contributorId !== null &&
-                        item.contributorId === getCurrentUserId();
+                        item.contributorId === currentUserId;
 
                     const isDeadlinePassed =
                         now === null ||
