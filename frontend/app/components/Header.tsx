@@ -1,27 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAccessToken, logout } from "@/lib/auth";
+import { useAuth } from "./AuthProvider";
 
 export default function Header() {
     const router = useRouter();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [isReady, setIsReady] = useState(false);
-
-    useEffect(() => {
-        const timeout = window.setTimeout(() => {
-            setIsLoggedIn(!!getAccessToken());
-            setIsReady(true);
-        }, 0);
-
-        return () => window.clearTimeout(timeout);
-    }, []);
+    const { isLoggedIn, isReady, signOut } = useAuth();
 
     function handleLogout() {
-        logout();
-        setIsLoggedIn(false);
+        signOut();
         router.push("/");
         router.refresh();
     }
