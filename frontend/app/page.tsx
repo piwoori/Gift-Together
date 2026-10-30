@@ -1,5 +1,5 @@
+import HomeActions from "./components/HomeActions";
 import Header from "./components/Header";
-import Link from "next/link";
 
 export default function Home() {
   return (
@@ -53,25 +53,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="mt-10 space-y-3">
-              <Link
-                  href="/wishlist"
-                  className="block rounded-2xl bg-[#328c82] py-4 text-center font-semibold text-white transition hover:bg-[#28776e]"
-              >
-                공동 선물 시작하기
-              </Link>
-
-              <Link
-                  href="/fundings"
-                  className="block rounded-2xl border border-[#328c82] py-4 text-center font-semibold text-[#328c82] transition hover:bg-[#e9f7f4]"
-              >
-                🎁 내 펀딩 목록 보기
-              </Link>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-gray-400">
-              위시리스트에서 원하는 선물을 선택해 보세요
-            </p>
+            <HomeActions />
           </section>
 
           <footer className="px-6 py-8 text-center text-xs text-gray-400">
