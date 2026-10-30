@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { useAuth } from "../components/AuthProvider";
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -9,6 +10,7 @@ import { login, saveAccessToken } from "@/lib/auth";
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { refreshAuth } = useAuth();
 
     const requestedNext = searchParams.get("next");
     const nextPath =
@@ -30,6 +32,7 @@ function LoginForm() {
             const response = await login({ email, password });
 
             saveAccessToken(response.accessToken);
+            refreshAuth();
 
             router.replace(nextPath);
         } catch (error) {
