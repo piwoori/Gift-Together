@@ -114,4 +114,16 @@ public class GlobalExceptionHandler {
                         e.getMessage()
                 ));
     }
+
+    @ExceptionHandler(WishlistItemNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleWishlistItemNotFound(
+            WishlistItemNotFoundException e
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "WISHLIST_ITEM_NOT_FOUND",
+                        e.getMessage()
+                ));
+    }
 }
