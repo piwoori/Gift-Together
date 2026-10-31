@@ -164,15 +164,6 @@ export default function ProductsPage() {
                                             {message}
                                         </p>
                                     )}
-
-                                    {messageProductId === product.productId && message && (
-                                        <p
-                                            role="status"
-                                            className="mt-3 text-center text-sm text-gray-600"
-                                        >
-                                            {message}
-                                        </p>
-                                    )}
                                 </div>
                             ))}
                         </div>
