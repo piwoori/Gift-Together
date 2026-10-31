@@ -63,7 +63,7 @@ export default function Home() {
                 <br/>
                 목표 금액이 모이면 선물을 받을 수 있어요.
               </p>
-              
+
             </div>
 
             <HomeActions/>
