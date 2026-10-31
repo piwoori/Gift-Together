@@ -7,6 +7,12 @@ import com.gifttogether.wishlist.repository.WishlistItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.gifttogether.common.exception.ConflictException;
+import com.gifttogether.common.exception.ProductNotFoundException;
+import com.gifttogether.product.domain.Product;
+import com.gifttogether.product.repository.ProductRepository;
+import com.gifttogether.user.domain.User;
+import com.gifttogether.wishlist.domain.WishlistItem;
 
 import java.util.List;
 
@@ -16,6 +22,7 @@ public class WishlistService {
 
     private final WishlistItemRepository wishlistItemRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
     public List<WishlistResponse> getWishlist(Long userId) {
@@ -29,5 +36,27 @@ public class WishlistService {
                 .stream()
                 .map(WishlistResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    public void addWishlistItem(Long userId, Long productId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(ProductNotFoundException::new);
+
+        if (wishlistItemRepository.existsByUserIdAndProductId(
+                userId, productId
+        )) {
+            throw new ConflictException(
+                    "이미 위시리스트에 등록된 상품입니다."
+            );
+        }
+
+        WishlistItem wishlistItem = new WishlistItem(user, product);
+
+        wishlistItemRepository.save(wishlistItem);
     }
 }

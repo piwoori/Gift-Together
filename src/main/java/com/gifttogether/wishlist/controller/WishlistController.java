@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.gifttogether.wishlist.dto.WishlistAddRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.List;
 
@@ -33,5 +39,21 @@ public class WishlistController {
             @AuthenticationPrincipal Long userId
     ) {
         return wishlistService.getWishlist(userId);
+    }
+
+    @Operation(
+            summary = "위시리스트 상품 추가",
+            description = "로그인한 사용자의 위시리스트에 상품을 추가합니다."
+    )
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public void addWishlistItem(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody WishlistAddRequest request
+    ) {
+        wishlistService.addWishlistItem(
+                userId,
+                request.productId()
+        );
     }
 }
