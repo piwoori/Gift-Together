@@ -5,7 +5,6 @@ import com.gifttogether.wishlist.service.WishlistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +14,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.List;
@@ -54,6 +57,22 @@ public class WishlistController {
         wishlistService.addWishlistItem(
                 userId,
                 request.productId()
+        );
+    }
+
+    @Operation(
+            summary = "위시리스트 상품 삭제",
+            description = "로그인한 사용자가 자신의 위시리스트 상품을 삭제합니다."
+    )
+    @DeleteMapping("/{wishlistItemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteWishlistItem(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long wishlistItemId
+    ) {
+        wishlistService.deleteWishlistItem(
+                userId,
+                wishlistItemId
         );
     }
 }

@@ -2,6 +2,7 @@ package com.gifttogether.wishlist.repository;
 
 import com.gifttogether.wishlist.domain.WishlistItem;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
 
 import java.util.List;
 
@@ -14,4 +15,9 @@ public interface WishlistItemRepository
     );
 
     List<WishlistItem> findAllByUserId(Long userId);
+
+    Optional<WishlistItem> findByIdAndUserId(
+            Long wishlistItemId,
+            Long userId
+    );
 }
