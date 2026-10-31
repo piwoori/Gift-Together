@@ -4,13 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
     getWishlist,
+    deleteWishlistItem,
     type WishlistItem,
 } from "@/lib/wishlist";
+
 
 export default function WishlistContent() {
     const [items, setItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [deleteError, setDeleteError] = useState("");
 
     useEffect(() => {
         let active = true;
@@ -40,6 +44,27 @@ export default function WishlistContent() {
         };
     }, []);
 
+    async function handleDelete(wishlistItemId: number) {
+        if (deletingId !== null) return;
+
+        setDeletingId(wishlistItemId);
+        setDeleteError("");
+
+        try {
+            await deleteWishlistItem(wishlistItemId);
+
+            setItems((prev) =>
+                prev.filter(
+                    (item) => item.wishlistItemId !== wishlistItemId
+                )
+            );
+        } catch {
+            setDeleteError("상품을 삭제하지 못했습니다. 다시 시도해 주세요.");
+        } finally {
+            setDeletingId(null);
+        }
+    }
+
     return (
         <main className="min-h-screen bg-[#f8faf9]">
             <div className="mx-auto min-h-screen max-w-md bg-white">
@@ -58,6 +83,12 @@ export default function WishlistContent() {
                         <br />
                         친구들과 함께 선물받아 보세요.
                     </p>
+
+                    {deleteError && (
+                        <p className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-600">
+                            {deleteError}
+                        </p>
+                    )}
 
                     {loading ? (
                         <p className="mt-8 text-sm text-gray-500">
@@ -79,7 +110,8 @@ export default function WishlistContent() {
                                     key={item.wishlistItemId}
                                     className="rounded-2xl border border-gray-100 p-5 shadow-sm"
                                 >
-                                    <div className="flex h-40 items-center justify-center rounded-xl bg-[#e9f7f4] text-5xl">
+                                    <div
+                                        className="flex h-40 items-center justify-center rounded-xl bg-[#e9f7f4] text-5xl">
                                         🎧
                                     </div>
 
@@ -97,6 +129,16 @@ export default function WishlistContent() {
                                     >
                                         이 상품으로 펀딩 만들기
                                     </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDelete(item.wishlistItemId)}
+                                        disabled={deletingId !== null}
+                                        className="mt-3 w-full rounded-xl border border-red-200 py-3 font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {deletingId === item.wishlistItemId
+                                            ? "삭제 중..."
+                                            : "위시리스트에서 삭제"}
+                                    </button>
                                 </div>
                             ))}
                         </div>

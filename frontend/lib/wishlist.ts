@@ -44,3 +44,18 @@ export async function getWishlist(): Promise<WishlistItem[]> {
 
     return response.json();
 }
+
+export async function deleteWishlistItem(
+    wishlistItemId: number
+): Promise<void> {
+    const response = await apiFetch(
+        `/api/wishlist/${wishlistItemId}`,
+        {
+            method: "DELETE",
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("위시리스트 상품 삭제에 실패했습니다.");
+    }
+}
