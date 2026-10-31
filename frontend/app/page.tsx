@@ -27,9 +27,15 @@ export default function Home() {
             </p>
 
             <div className="mt-10 rounded-3xl bg-[#e9f7f4] p-6">
-              <p className="text-sm font-medium text-gray-600">
-                함께 모으는 선물
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-600">
+                  함께 모으는 선물
+                </p>
+
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#328c82]">
+                    이용 예시
+                </span>
+              </div>
 
               <h2 className="mt-2 text-xl font-bold text-gray-900">
                 에어팟 프로
@@ -45,15 +51,22 @@ export default function Home() {
               </div>
 
               <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
-                <div className="h-full w-[53.33%] rounded-full bg-[#65b9ad]" />
+                <div className="h-full w-[53.33%] rounded-full bg-[#65b9ad]"/>
               </div>
 
               <p className="mt-3 text-right text-xs text-gray-500">
                 목표까지 70,000원 남았어요
               </p>
+
+              <p className="mt-5 border-t border-[#cce8e2] pt-4 text-xs leading-5 text-gray-500">
+                친구들이 각각 30,000원과 50,000원을 보탰어요.
+                <br/>
+                목표 금액이 모이면 선물을 받을 수 있어요.
+              </p>
+              
             </div>
 
-            <HomeActions />
+            <HomeActions/>
           </section>
 
           <footer className="px-6 py-8 text-center text-xs text-gray-400">
