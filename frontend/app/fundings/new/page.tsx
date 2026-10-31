@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { getProducts, type Product } from "@/lib/product";
 
 function FundingCreateForm() {
     const router = useRouter();
@@ -15,15 +16,26 @@ function FundingCreateForm() {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [product, setProduct] = useState<Product | null>(null);
+    const [productLoading, setProductLoading] = useState(true);
+    const [productError, setProductError] = useState("");
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
+        // 1. 상품 ID 유효성 검증
         if (!Number.isSafeInteger(productId) || productId <= 0) {
             setError("상품 정보가 올바르지 않습니다.");
             return;
         }
 
+        // 2. 실제 조회된 상품과 일치하는지 검증
+        if (!product || product.productId !== productId) {
+            setError("상품 정보를 확인할 수 없습니다.");
+            return;
+        }
+
+        // 3. 마감일 검증
         const deadline = new Date(expiredAt).getTime();
 
         if (!expiredAt || !Number.isFinite(deadline) || deadline <= Date.now()) {
@@ -60,6 +72,51 @@ function FundingCreateForm() {
         }
     }
 
+    useEffect(() => {
+        let active = true;
+
+        async function loadProduct() {
+            if (active) {
+                setProduct(null);
+                setProductError("");
+                setProductLoading(true);
+            }
+
+            try {
+                if (!Number.isSafeInteger(productId) || productId <= 0) {
+                    throw new Error("올바르지 않은 상품입니다.");
+                }
+
+                const products = await getProducts();
+                const selectedProduct = products.find(
+                    (item) => item.productId === productId
+                );
+
+                if (!selectedProduct) {
+                    throw new Error("상품을 찾을 수 없습니다.");
+                }
+
+                if (active) {
+                    setProduct(selectedProduct);
+                }
+            } catch {
+                if (active) {
+                    setProductError("상품 정보를 불러오지 못했습니다.");
+                }
+            } finally {
+                if (active) {
+                    setProductLoading(false);
+                }
+            }
+        }
+
+        loadProduct();
+
+        return () => {
+            active = false;
+        };
+    }, [productId]);
+
     return (
         <main className="min-h-screen bg-[#f8faf9]">
             <div className="mx-auto min-h-screen max-w-md bg-white">
@@ -73,6 +130,37 @@ function FundingCreateForm() {
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-7 px-6 py-8">
+                    {productLoading ? (
+                        <p className="text-sm text-gray-500">
+                            상품 정보를 불러오는 중...
+                        </p>
+                    ) : productError ? (
+                        <p className="rounded-xl bg-red-50 p-4 text-sm text-red-600">
+                            {productError}
+                        </p>
+                    ) : product ? (
+                        <div className="rounded-2xl border border-gray-100 p-5 shadow-sm">
+                            <p className="mb-4 text-sm font-semibold text-gray-500">
+                                선택한 선물 🎁
+                            </p>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-[#e9f7f4] text-4xl">
+                                    🎧
+                                </div>
+
+                                <div>
+                                    <h2 className="font-bold text-gray-900">
+                                        {product.name}
+                                    </h2>
+
+                                    <p className="mt-2 text-lg font-bold text-[#328c82]">
+                                        {product.price.toLocaleString("ko-KR")}원
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                     <div>
                         <label
                             htmlFor="expiredAt"
@@ -120,7 +208,7 @@ function FundingCreateForm() {
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || productLoading || !product}
                         className="w-full rounded-xl bg-[#328c82] py-4 font-semibold text-white disabled:opacity-50"
                     >
                         {loading ? "펀딩 생성 중..." : "펀딩 생성하기"}
