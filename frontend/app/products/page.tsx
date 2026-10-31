@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getProducts, type Product } from "@/lib/product";
-import { addWishlistItem } from "@/lib/wishlist";
+import {
+    addWishlistItem,
+    getWishlist,
+} from "@/lib/wishlist";
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -12,16 +15,23 @@ export default function ProductsPage() {
     const [addingProductId, setAddingProductId] = useState<number | null>(null);
     const [message, setMessage] = useState("");
     const [messageProductId, setMessageProductId] = useState<number | null>(null);
+    const [wishlistedProductIds, setWishlistedProductIds] = useState<number[]>([]);
 
     useEffect(() => {
         let active = true;
 
         async function loadProducts() {
             try {
-                const data = await getProducts();
+                const [productData, wishlistData] = await Promise.all([
+                    getProducts(),
+                    getWishlist(),
+                ]);
 
                 if (active) {
-                    setProducts(data);
+                    setProducts(productData);
+                    setWishlistedProductIds(
+                        wishlistData.map((item) => item.productId)
+                    );
                 }
             } catch (err) {
                 if (active) {
@@ -54,6 +64,10 @@ export default function ProductsPage() {
 
         try {
             await addWishlistItem({ productId });
+
+            setWishlistedProductIds((prev) =>
+                prev.includes(productId) ? prev : [...prev, productId]
+            );
 
             setMessage("위시리스트에 상품을 담았어요! 🎁");
         } catch (err) {
@@ -125,17 +139,31 @@ export default function ProductsPage() {
                                         {product.price.toLocaleString("ko-KR")}원
                                     </p>
 
+                                    {wishlistedProductIds.includes(product.productId) ? (
+                                        <Link
+                                            href="/wishlist"
+                                            className="mt-5 block w-full rounded-xl border border-[#328c82] bg-[#e9f7f4] py-3 text-center font-semibold text-[#328c82]"
+                                        >
+                                            ✓ 담긴 상품 · 위시리스트 보기
+                                        </Link>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddWishlist(product.productId)}
+                                            disabled={addingProductId !== null}
+                                            className="mt-5 w-full rounded-xl bg-[#328c82] py-3 font-semibold text-white transition hover:bg-[#28776e] disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {addingProductId === product.productId
+                                                ? "담는 중..."
+                                                : "🎁 위시리스트에 담기"}
+                                        </button>
+                                    )}
 
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAddWishlist(product.productId)}
-                                        disabled={addingProductId !== null}
-                                        className="mt-5 w-full rounded-xl bg-[#328c82] py-3 font-semibold text-white transition hover:bg-[#28776e] disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        {addingProductId === product.productId
-                                            ? "담는 중..."
-                                            : "🎁 위시리스트에 담기"}
-                                    </button>
+                                    {messageProductId === product.productId && message && (
+                                        <p role="status" className="mt-3 text-center text-sm text-gray-600">
+                                            {message}
+                                        </p>
+                                    )}
 
                                     {messageProductId === product.productId && message && (
                                         <p

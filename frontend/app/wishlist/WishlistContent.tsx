@@ -2,25 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
-
-type WishlistItem = {
-    wishlistItemId: number;
-    productId: number;
-    productName: string;
-    price: number;
-    imageUrl: string | null;
-};
-
-async function getWishlist(): Promise<WishlistItem[]> {
-    const response = await apiFetch("/api/wishlist");
-
-    if (!response.ok) {
-        throw new Error("위시리스트를 불러오지 못했습니다.");
-    }
-
-    return response.json();
-}
+import {
+    getWishlist,
+    type WishlistItem,
+} from "@/lib/wishlist";
 
 export default function WishlistContent() {
     const [items, setItems] = useState<WishlistItem[]>([]);
