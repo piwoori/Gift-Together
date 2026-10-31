@@ -1,21 +1,10 @@
-
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getAccessToken } from "@/lib/auth";
+import { getMyFundings, type Funding, type FundingStatus } from "@/lib/funding";
 
-type FundingStatus = "OPEN" | "COMPLETED" | "EXPIRED" | "CANCELLED";
 type FundingFilter = "ALL" | FundingStatus;
-
-type Funding = {
-    fundingId: number;
-    productName: string;
-    productImageUrl: string;
-    targetAmount: number;
-    currentAmount: number;
-    status: FundingStatus;
-};
 
 const filters: { label: string; value: FundingFilter }[] = [
     { label: "전체", value: "ALL" },
@@ -43,24 +32,10 @@ export default function MyFundingsPage() {
 
         async function loadFundings() {
             try {
-                const token = getAccessToken();
+                const data = await getMyFundings(controller.signal);
 
-                if (!token) {
-                    throw new Error("로그인이 필요합니다.");
-                }
+                if (controller.signal.aborted) return;
 
-                const response = await fetch("/api/fundings/my", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                    cache: "no-store",
-                });
-
-                if (!response.ok) {
-                    throw new Error("펀딩 목록 조회에 실패했습니다.");
-                }
-
-                const data: Funding[] = await response.json();
                 setFundings(data);
             } catch (err) {
                 if (controller.signal.aborted) return;
