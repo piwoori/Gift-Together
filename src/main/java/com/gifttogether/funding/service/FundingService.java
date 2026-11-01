@@ -81,6 +81,14 @@ public class FundingService {
             Long userId,
             FundingCreateRequest request
     ) {
+        // 마감일이 현재보다 미래인지 검증
+        if (request.expiredAt() == null ||
+                !request.expiredAt().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException(
+                    "펀딩 마감일은 현재보다 미래여야 합니다."
+            );
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(FundingNotFoundException::new);
 
