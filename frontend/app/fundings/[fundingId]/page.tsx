@@ -26,8 +26,14 @@ async function getFunding(fundingId: string): Promise<Funding | null> {
         { cache: "no-store" }
     );
 
-    if (!response.ok) {
+    if (response.status === 404) {
         return null;
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            `펀딩 조회에 실패했습니다. (${response.status})`
+        );
     }
 
     return response.json();
