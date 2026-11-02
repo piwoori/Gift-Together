@@ -1,5 +1,6 @@
 package com.gifttogether.common;
 
+import com.gifttogether.auth.jwt.JwtTokenProvider;
 import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.repository.FundingRepository;
 import com.gifttogether.product.domain.Product;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.username=sa",
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.flyway.enabled=false",
         "spring.sql.init.mode=never",
         "spring.task.scheduling.enabled=false"
 })
@@ -41,6 +43,9 @@ class ExceptionHandlingTest {
 
     @Autowired
     FundingRepository fundingRepository;
+
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
 
     @Test
     void 존재하지_않는_펀딩은_404를_반환한다() throws Exception {
@@ -84,7 +89,10 @@ class ExceptionHandlingTest {
 
         mockMvc.perform(
                         post("/api/fundings/" + funding.getId() + "/contributions")
-                                .header("X-USER-ID", contributor.getId())
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + jwtTokenProvider.createAccessToken(contributor.getId())
+                                )
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -129,6 +137,10 @@ class ExceptionHandlingTest {
         mockMvc.perform(
                         post("/api/fundings/" + funding.getId() + "/cancel")
                                 .header("X-USER-ID", otherUser.getId())
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + jwtTokenProvider.createAccessToken(otherUser.getId())
+                                )
                 )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code")
@@ -170,6 +182,10 @@ class ExceptionHandlingTest {
         mockMvc.perform(
                         post("/api/fundings/" + funding.getId() + "/contributions")
                                 .header("X-USER-ID", contributor.getId())
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + jwtTokenProvider.createAccessToken(contributor.getId())
+                                )
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                     {
