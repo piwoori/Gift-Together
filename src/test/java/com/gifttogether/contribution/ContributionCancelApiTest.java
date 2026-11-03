@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import com.gifttogether.auth.jwt.JwtTokenProvider;
 
 import java.time.LocalDateTime;
 
@@ -52,6 +53,9 @@ class ContributionCancelApiTest {
 
     @Autowired
     PaymentRepository paymentRepository;
+
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
 
     @Test
     void 다른_펀딩의_참여를_취소하려고_하면_404를_반환한다()
@@ -126,6 +130,10 @@ class ContributionCancelApiTest {
                                 .header(
                                         "X-USER-ID",
                                         contributor.getId()
+                                )
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + jwtTokenProvider.createAccessToken(contributor.getId())
                                 )
                 )
                 .andExpect(status().isNotFound())
