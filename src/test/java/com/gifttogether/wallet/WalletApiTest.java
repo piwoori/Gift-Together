@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import com.gifttogether.auth.jwt.JwtTokenProvider;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +31,9 @@ class WalletApiTest {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
+
     @Test
     void 지갑을_조회하면_잔액을_반환한다() throws Exception {
 
@@ -40,6 +44,10 @@ class WalletApiTest {
         mockMvc.perform(
                         get("/api/wallet")
                                 .header("X-USER-ID", user.getId())
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + jwtTokenProvider.createAccessToken(user.getId())
+                                )
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(user.getId()))
