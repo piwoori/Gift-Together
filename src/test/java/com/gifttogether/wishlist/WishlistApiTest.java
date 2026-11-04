@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import com.gifttogether.auth.jwt.JwtTokenProvider;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -41,6 +42,9 @@ class WishlistApiTest {
     @Autowired
     WishlistItemRepository wishlistItemRepository;
 
+    @Autowired
+    JwtTokenProvider jwtTokenProvider;
+
     @Test
     void 자신의_위시리스트를_조회한다() throws Exception {
 
@@ -68,9 +72,10 @@ class WishlistApiTest {
 
         mockMvc.perform(
                         get("/api/wishlist")
+                                .header("X-USER-ID", user.getId())
                                 .header(
-                                        "X-USER-ID",
-                                        user.getId()
+                                        "Authorization",
+                                        "Bearer " + jwtTokenProvider.createAccessToken(user.getId())
                                 )
                 )
                 .andExpect(status().isOk())
