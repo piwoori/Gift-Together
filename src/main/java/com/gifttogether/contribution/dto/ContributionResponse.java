@@ -5,7 +5,6 @@ import com.gifttogether.contribution.domain.ContributionStatus;
 
 public record ContributionResponse(
         Long contributionId,
-        Long contributorId,
         String contributorNickname,
         Long amount,
         ContributionStatus status,
@@ -17,7 +16,6 @@ public record ContributionResponse(
         if (contribution.isAnonymous()) {
             return new ContributionResponse(
                     contribution.getId(),
-                    null,
                     "익명",
                     contribution.getAmount(),
                     contribution.getStatus(),
@@ -27,7 +25,6 @@ public record ContributionResponse(
 
         return new ContributionResponse(
                 contribution.getId(),
-                contribution.getContributor().getId(),
                 contribution.getContributor().getNickname(),
                 contribution.getAmount(),
                 contribution.getStatus(),
