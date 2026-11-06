@@ -88,4 +88,10 @@ class WishlistApiTest {
                 .andExpect(jsonPath("$[0].wishlistItemId")
                         .value(org.hamcrest.Matchers.notNullValue()));
     }
+
+    @Test
+    void 인증하지_않은_사용자는_위시리스트를_조회할_수_없다() throws Exception {
+        mockMvc.perform(get("/api/wishlist"))
+                .andExpect(status().isUnauthorized());
+    }
 }
