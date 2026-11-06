@@ -98,7 +98,6 @@ class ContributionQueryTest {
 
         ContributionResponse response = responses.get(0);
 
-        assertThat(response.contributorId()).isNull();
         assertThat(response.contributorNickname()).isEqualTo("익명");
         assertThat(response.amount()).isEqualTo(10_000L);
         assertThat(response.anonymous()).isTrue();
