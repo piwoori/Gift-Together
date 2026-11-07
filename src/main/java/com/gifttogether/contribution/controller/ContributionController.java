@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.gifttogether.contribution.dto.MyContributionResponse;
 
 import java.util.List;
 
@@ -76,5 +77,20 @@ public class ContributionController {
             @PathVariable Long fundingId
     ) {
         return contributionService.getContributions(fundingId);
+    }
+
+    @Operation(
+            summary = "내 펀딩 참여 내역 조회",
+            description = "인증된 사용자의 해당 펀딩 참여 내역만 조회합니다."
+    )
+    @GetMapping("/my")
+    public List<MyContributionResponse> getMyContributions(
+            @PathVariable Long fundingId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return contributionService.getMyContributions(
+                fundingId,
+                userId
+        );
     }
 }

@@ -22,4 +22,9 @@ public interface ContributionRepository
             Long fundingId,
             ContributionStatus status
     );
+
+    List<Contribution> findAllByFundingIdAndContributorId(
+            Long fundingId,
+            Long contributorId
+    );
 }

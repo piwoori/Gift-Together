@@ -13,6 +13,7 @@ import com.gifttogether.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.gifttogether.contribution.dto.MyContributionResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -100,6 +101,76 @@ class ContributionQueryTest {
 
         assertThat(response.contributorNickname()).isEqualTo("익명");
         assertThat(response.amount()).isEqualTo(10_000L);
+        assertThat(response.anonymous()).isTrue();
+    }
+
+    @Test
+    void 내_참여_내역은_본인_것만_조회하고_익명_참여도_포함한다() {
+        User receiver = userRepository.save(
+                new User("receiver2", "receiver2@test.com")
+        );
+
+        User userA = userRepository.save(
+                new User("userA", "userA@test.com")
+        );
+
+        User userB = userRepository.save(
+                new User("userB", "userB@test.com")
+        );
+
+        Product product = productRepository.save(
+                new Product(
+                        "테스트 상품 2",
+                        100_000L,
+                        "https://example.com/test2.jpg"
+                )
+        );
+
+        Funding funding = fundingRepository.save(
+                new Funding(
+                        receiver,
+                        product,
+                        LocalDateTime.now().plusDays(1),
+                        "내 참여 조회 테스트"
+                )
+        );
+
+        Contribution myAnonymousContribution = contributionRepository.save(
+                new Contribution(
+                        funding,
+                        userA,
+                        10_000L,
+                        true
+                )
+        );
+
+        contributionRepository.save(
+                new Contribution(
+                        funding,
+                        userB,
+                        20_000L,
+                        false
+                )
+        );
+
+        List<MyContributionResponse> responses =
+                contributionService.getMyContributions(
+                        funding.getId(),
+                        userA.getId()
+                );
+
+        assertThat(responses).hasSize(1);
+
+        MyContributionResponse response = responses.get(0);
+
+        assertThat(response.contributionId())
+                .isEqualTo(myAnonymousContribution.getId());
+
+        assertThat(response.contributorNickname())
+                .isEqualTo("익명");
+
+        assertThat(response.amount()).isEqualTo(10_000L);
+
         assertThat(response.anonymous()).isTrue();
     }
 }
