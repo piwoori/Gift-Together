@@ -1,65 +1,56 @@
+
 "use client";
 
 import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 
+const primaryButton =
+    "flex min-h-14 items-center justify-center rounded-2xl bg-[#374151] px-5 py-4 text-center text-sm font-semibold text-white transition-colors hover:bg-[#1f2937] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#374151]";
+
+const secondaryButton =
+    "flex min-h-12 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-semibold text-[#374151] transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#374151]";
+
 export default function HomeActions() {
     const { isLoggedIn, isReady } = useAuth();
 
     if (!isReady) {
-        return <div className="mt-10 h-32" />;
+        return (
+            <div
+                className="h-28 animate-pulse rounded-2xl bg-gray-100"
+                aria-label="사용자 정보 확인 중"
+            />
+        );
     }
 
     if (!isLoggedIn) {
         return (
-            <div className="mt-10 space-y-3">
-                <Link
-                    href="/login?next=/wishlist"
-                    className="block rounded-2xl bg-[#328c82] py-4 text-center font-semibold text-white transition hover:bg-[#28776e]"
-                >
-                    로그인하고 시작하기
+            <div className="space-y-3">
+                <Link href="/login?next=/wishlist" className={primaryButton}>
+                    🎁 로그인하고 선물 만들기
                 </Link>
 
-                <Link
-                    href="/signup"
-                    className="block rounded-2xl border border-[#328c82] py-4 text-center font-semibold text-[#328c82] transition hover:bg-[#e9f7f4]"
-                >
-                    회원가입
+                <Link href="/signup" className={secondaryButton}>
+                    처음이신가요? 회원가입
                 </Link>
-
-                <p className="pt-1 text-center text-xs text-gray-400">
-                    로그인 후 친구들과 함께 선물을 모아보세요.
-                </p>
             </div>
         );
     }
 
     return (
-        <div className="mt-10 space-y-3">
-            <Link
-                href="/wishlist"
-                className="block rounded-2xl bg-[#328c82] py-4 text-center font-semibold text-white transition hover:bg-[#28776e]"
-            >
+        <div className="space-y-3">
+            <Link href="/wishlist" className={primaryButton}>
                 🎁 공동 선물 시작하기
             </Link>
 
-            <Link
-                href="/fundings"
-                className="block rounded-2xl border border-[#328c82] py-4 text-center font-semibold text-[#328c82] transition hover:bg-[#e9f7f4]"
-            >
-                내 펀딩 목록 보기
-            </Link>
+            <div className="grid grid-cols-2 gap-3">
+                <Link href="/fundings" className={secondaryButton}>
+                    내 펀딩
+                </Link>
 
-            <Link
-                href="/wallet"
-                className="block py-3 text-center text-sm font-medium text-gray-500 transition hover:text-[#328c82]"
-            >
-                선물 지갑 확인하기
-            </Link>
-
-            <p className="text-center text-xs text-gray-400">
-                위시리스트에서 원하는 선물을 선택해 보세요.
-            </p>
+                <Link href="/wallet" className={secondaryButton}>
+                    선물 지갑
+                </Link>
+            </div>
         </div>
     );
 }

@@ -1,13 +1,12 @@
 "use client";
 
 import { apiFetch } from "@/lib/api";
-import { getCurrentUserId } from "@/lib/auth";
+import { getAccessToken } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Contribution = {
     contributionId: number;
-    contributorId: number | null;
     contributorNickname: string;
     amount: number;
     status: string;
@@ -44,20 +43,12 @@ export default function ContributionHistory({
                                             }: Props) {
     const router = useRouter();
 
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+    const [myContributionIds, setMyContributionIds] = useState<number[]>([]);
     const [contributions, setContributions] = useState<Contribution[]>([]);
     const [loading, setLoading] = useState(true);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [error, setError] = useState("");
     const [now, setNow] = useState<number | null>(null);
-
-    useEffect(() => {
-        const timeout = window.setTimeout(() => {
-            setCurrentUserId(getCurrentUserId());
-        }, 0);
-
-        return () => window.clearTimeout(timeout);
-    }, []);
 
     useEffect(() => {
         function updateNow() {
@@ -105,6 +96,45 @@ export default function ContributionHistory({
         }
 
         loadContributions();
+
+        return () => {
+            active = false;
+        };
+    }, [fundingId, fundingStatus]);
+
+    useEffect(() => {
+        let active = true;
+
+        async function loadMyContributions() {
+            if (!getAccessToken()) {
+                setMyContributionIds([]);
+                return;
+            }
+
+            try {
+                const response = await apiFetch(
+                    `/api/fundings/${fundingId}/contributions/my`
+                );
+
+                if (!response.ok) {
+                    throw new Error("내 참여 내역 조회 실패");
+                }
+
+                const data: Contribution[] = await response.json();
+
+                if (active) {
+                    setMyContributionIds(
+                        data.map((item) => item.contributionId)
+                    );
+                }
+            } catch {
+                if (active) {
+                    setMyContributionIds([]);
+                }
+            }
+        }
+
+        loadMyContributions();
 
         return () => {
             active = false;
@@ -173,10 +203,7 @@ export default function ContributionHistory({
 
             <div className="space-y-4">
                 {contributions.map((item) => {
-                    const isMine =
-                        currentUserId !== null &&
-                        item.contributorId !== null &&
-                        item.contributorId === currentUserId;
+                    const isMine = myContributionIds.includes(item.contributionId);
 
                     const isDeadlinePassed =
                         now === null ||
