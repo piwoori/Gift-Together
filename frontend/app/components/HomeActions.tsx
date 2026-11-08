@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 
 const primaryButton =
-    "flex min-h-14 items-center justify-center rounded-2xl bg-[#374151] px-5 py-4 text-center text-sm font-semibold text-white transition-colors hover:bg-[#1f2937] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#374151]";
+    "flex min-h-14 items-center justify-center rounded-2xl bg-primary px-5 py-4 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 const secondaryButton =
-    "flex min-h-12 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-semibold text-[#374151] transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#374151]";
+    "flex min-h-12 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-semibold text-primary transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
 export default function HomeActions() {
     const { isLoggedIn, isReady } = useAuth();
