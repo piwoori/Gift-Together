@@ -1,21 +1,22 @@
+
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getProducts, type Product } from "@/lib/product";
-import {
-    addWishlistItem,
-    getWishlist,
-} from "@/lib/wishlist";
+import { addWishlistItem, getWishlist } from "@/lib/wishlist";
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [search, setSearch] = useState("");
     const [addingProductId, setAddingProductId] = useState<number | null>(null);
     const [message, setMessage] = useState("");
     const [messageProductId, setMessageProductId] = useState<number | null>(null);
     const [wishlistedProductIds, setWishlistedProductIds] = useState<number[]>([]);
+    const [failedImageIds, setFailedImageIds] = useState<number[]>([]);
 
     useEffect(() => {
         let active = true;
@@ -27,12 +28,12 @@ export default function ProductsPage() {
                     getWishlist(),
                 ]);
 
-                if (active) {
-                    setProducts(productData);
-                    setWishlistedProductIds(
-                        wishlistData.map((item) => item.productId)
-                    );
-                }
+                if (!active) return;
+
+                setProducts(productData);
+                setWishlistedProductIds(
+                    wishlistData.map((item) => item.productId)
+                );
             } catch (err) {
                 if (active) {
                     setError(
@@ -42,9 +43,7 @@ export default function ProductsPage() {
                     );
                 }
             } finally {
-                if (active) {
-                    setLoading(false);
-                }
+                if (active) setLoading(false);
             }
         }
 
@@ -69,7 +68,7 @@ export default function ProductsPage() {
                 prev.includes(productId) ? prev : [...prev, productId]
             );
 
-            setMessage("위시리스트에 상품을 담았어요! 🎁");
+            setMessage("위시리스트에 상품을 담았어요!");
         } catch (err) {
             setMessage(
                 err instanceof Error
@@ -81,92 +80,190 @@ export default function ProductsPage() {
         }
     }
 
+    const filteredProducts = products.filter((product) =>
+        product.name.toLowerCase().includes(search.trim().toLowerCase())
+    );
+
     return (
-        <main className="min-h-screen bg-[#f8faf9]">
+        <main className="min-h-screen bg-surface-muted">
             <div className="mx-auto min-h-screen max-w-md bg-white shadow-sm">
                 <header className="flex items-center gap-4 border-b border-gray-100 px-6 py-5">
-                    <Link href="/" className="text-xl text-gray-600">
+                    <Link
+                        href="/"
+                        aria-label="홈으로 돌아가기"
+                        className="text-xl text-gray-600"
+                    >
                         ←
                     </Link>
                     <h1 className="text-lg font-bold text-gray-900">
                         선물 둘러보기
                     </h1>
+                    <Link
+                        href="/wishlist"
+                        className="ml-auto text-sm font-semibold text-accent"
+                    >
+                        내 위시리스트
+                    </Link>
                 </header>
 
-                <section className="px-6 py-8">
-                    <h2 className="text-xl font-bold text-gray-900">
-                        어떤 선물을 받고 싶나요? 🎁
+                <section className="px-5 pb-12 pt-8">
+                    <p className="text-xs font-semibold text-accent">
+                        GIFT COLLECTION
+                    </p>
+                    <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                        어떤 선물을 받고 싶나요?
                     </h2>
-
                     <p className="mt-2 text-sm leading-6 text-gray-500">
-                        원하는 상품을 찾아 위시리스트에 담아보세요.
+                        마음에 드는 선물을 골라 위시리스트에 담아보세요.
                     </p>
 
+                    <div className="mt-7">
+                        <label htmlFor="product-search" className="sr-only">
+                            상품 검색
+                        </label>
+                        <input
+                            id="product-search"
+                            type="search"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            placeholder="찾고 싶은 선물을 검색해 보세요"
+                            className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-900 outline-none transition focus:border-primary focus:bg-white"
+                        />
+                    </div>
+
                     {loading ? (
-                        <p className="mt-10 text-center text-sm text-gray-500">
-                            상품을 불러오는 중...
-                        </p>
+                        <div className="mt-8 grid grid-cols-2 gap-3" aria-label="상품 불러오는 중">
+                            {[1, 2, 3, 4].map((item) => (
+                                <div
+                                    key={item}
+                                    className="animate-pulse rounded-2xl border border-gray-100 p-3"
+                                >
+                                    <div className="aspect-square rounded-xl bg-gray-100" />
+                                    <div className="mt-4 h-4 rounded bg-gray-100" />
+                                    <div className="mt-3 h-4 w-2/3 rounded bg-gray-100" />
+                                    <div className="mt-5 h-10 rounded-xl bg-gray-100" />
+                                </div>
+                            ))}
+                        </div>
                     ) : error ? (
                         <p
                             role="alert"
-                            className="mt-10 rounded-xl bg-red-50 p-4 text-sm text-red-600"
+                            className="mt-8 rounded-2xl bg-red-50 p-5 text-sm text-red-600"
                         >
                             {error}
                         </p>
                     ) : products.length === 0 ? (
-                        <div className="mt-10 rounded-2xl border border-gray-100 p-8 text-center">
-                            <p className="text-3xl">🎁</p>
-                            <p className="mt-3 text-sm text-gray-500">
-                                등록된 상품이 없습니다.
+                        <div className="mt-8 rounded-2xl border border-gray-100 px-5 py-12 text-center">
+                            <p className="text-4xl">🎁</p>
+                            <p className="mt-4 text-sm text-gray-500">
+                                아직 등록된 상품이 없어요.
                             </p>
                         </div>
                     ) : (
-                        <div className="mt-8 space-y-4">
-                            {products.map((product) => (
-                                <div
-                                    key={product.productId}
-                                    className="rounded-2xl border border-gray-100 p-5 shadow-sm"
-                                >
-                                    <div className="flex h-36 items-center justify-center rounded-xl bg-[#e9f7f4] text-5xl">
-                                        🎧
-                                    </div>
+                        <>
+                            <div className="mt-7 flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-gray-900">
+                                    전체 상품
+                                </h3>
+                                <span className="text-xs text-gray-400">
+                  {filteredProducts.length}개
+                </span>
+                            </div>
 
-                                    <h3 className="mt-4 text-lg font-bold text-gray-900">
-                                        {product.name}
-                                    </h3>
-
-                                    <p className="mt-2 text-xl font-bold text-[#328c82]">
-                                        {product.price.toLocaleString("ko-KR")}원
+                            {filteredProducts.length === 0 ? (
+                                <div className="mt-6 rounded-2xl bg-gray-50 px-5 py-12 text-center">
+                                    <p className="text-3xl">🔎</p>
+                                    <p className="mt-3 text-sm text-gray-500">
+                                        검색 결과가 없어요.
                                     </p>
-
-                                    {wishlistedProductIds.includes(product.productId) ? (
-                                        <Link
-                                            href="/wishlist"
-                                            className="mt-5 block w-full rounded-xl border border-[#328c82] bg-[#e9f7f4] py-3 text-center font-semibold text-[#328c82]"
-                                        >
-                                            ✓ 담긴 상품 · 위시리스트 보기
-                                        </Link>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAddWishlist(product.productId)}
-                                            disabled={addingProductId !== null}
-                                            className="mt-5 w-full rounded-xl bg-[#328c82] py-3 font-semibold text-white transition hover:bg-[#28776e] disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {addingProductId === product.productId
-                                                ? "담는 중..."
-                                                : "🎁 위시리스트에 담기"}
-                                        </button>
-                                    )}
-
-                                    {messageProductId === product.productId && message && (
-                                        <p role="status" className="mt-3 text-center text-sm text-gray-600">
-                                            {message}
-                                        </p>
-                                    )}
                                 </div>
-                            ))}
-                        </div>
+                            ) : (
+                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                    {filteredProducts.map((product) => {
+                                        const isWishlisted = wishlistedProductIds.includes(
+                                            product.productId
+                                        );
+                                        const imageUrl = product.imageUrl;
+                                        const showImage =
+                                            Boolean(imageUrl) &&
+                                            !failedImageIds.includes(product.productId);
+
+                                        return (
+                                            <article
+                                                key={product.productId}
+                                                className="flex min-w-0 flex-col rounded-2xl border border-gray-100 bg-white p-3 shadow-sm"
+                                            >
+                                                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-50">
+                                                    {showImage && imageUrl ? (
+                                                        <Image
+                                                            src={imageUrl}
+                                                            alt={product.name}
+                                                            fill
+                                                            unoptimized
+                                                            sizes="(max-width: 448px) 50vw, 190px"
+                                                            className="object-contain p-3"
+                                                            onError={() =>
+                                                                setFailedImageIds((prev) =>
+                                                                    prev.includes(product.productId)
+                                                                        ? prev
+                                                                        : [...prev, product.productId]
+                                                                )
+                                                            }
+                                                        />
+                                                    ) : (
+                                                        <span className="text-5xl" aria-hidden="true">
+                              🎁
+                            </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex flex-1 flex-col">
+                                                    <h3 className="mt-4 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-gray-900">
+                                                        {product.name}
+                                                    </h3>
+                                                    <p className="mt-2 text-base font-bold text-primary">
+                                                        {product.price.toLocaleString("ko-KR")}원
+                                                    </p>
+
+                                                    <div className="mt-auto pt-4">
+                                                        {isWishlisted ? (
+                                                            <Link
+                                                                href="/wishlist"
+                                                                className="flex min-h-11 items-center justify-center rounded-xl bg-surface-accent px-2 text-center text-xs font-semibold text-accent"
+                                                            >
+                                                                ✓ 담긴 상품
+                                                            </Link>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleAddWishlist(product.productId)
+                                                                }
+                                                                disabled={addingProductId !== null}
+                                                                className="min-h-11 w-full rounded-xl bg-primary px-2 text-xs font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {addingProductId === product.productId
+                                                                    ? "담는 중..."
+                                                                    : "위시리스트 담기"}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {messageProductId === product.productId && message && (
+                                                    <p
+                                                        role="status"
+                                                        className="mt-3 text-xs leading-5 text-gray-600"
+                                                    >
+                                                        {message}
+                                                    </p>
+                                                )}
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </>
                     )}
                 </section>
             </div>
