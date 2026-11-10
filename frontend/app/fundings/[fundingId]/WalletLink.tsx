@@ -24,7 +24,7 @@ export default function WalletLink({ receiverId }: Props) {
     return (
         <Link
             href="/wallet"
-            className="mt-5 block rounded-xl bg-[#328c82] py-3 text-center font-semibold text-white"
+            className="mt-5 block rounded-xl bg-[#606472] py-3 text-center font-semibold text-white transition hover:bg-[#4f5360]"
         >
             내 선물 지갑 확인하기 →
         </Link>

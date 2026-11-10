@@ -55,7 +55,7 @@ export default function ShareFunding({
             <button
                 type="button"
                 onClick={shareFunding}
-                className="w-full rounded-2xl bg-[#328c82] py-4 font-semibold text-white transition hover:bg-[#28776e]"
+                className="w-full rounded-2xl bg-[#606472] py-4 font-semibold text-white transition hover:bg-[#4f5360]"
             >
                 🎁 친구에게 공유하기
             </button>
@@ -63,7 +63,7 @@ export default function ShareFunding({
             <button
                 type="button"
                 onClick={copyLink}
-                className="w-full rounded-2xl border border-[#328c82] py-4 font-semibold text-[#328c82] transition hover:bg-[#e9f7f4]"
+                className="w-full rounded-2xl border border-[#606472] py-4 font-semibold text-[#606472] transition hover:bg-[#f3f4f6]"
             >
                 🔗 링크 복사하기
             </button>
