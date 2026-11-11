@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { isFundingBeforeDeadline } from "@/lib/deadline";
 
 type Contribution = {
     contributionId: number;
@@ -207,8 +208,7 @@ export default function ContributionHistory({
 
                     const isDeadlinePassed =
                         now === null ||
-                        !Number.isFinite(new Date(expiredAt).getTime()) ||
-                        new Date(expiredAt).getTime() <= now;
+                        !isFundingBeforeDeadline(expiredAt, now);
 
                     const canCancel =
                         isMine &&

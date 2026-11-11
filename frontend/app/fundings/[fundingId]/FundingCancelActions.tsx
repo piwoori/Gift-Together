@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentUserId } from "@/lib/auth";
 import FundingCancelButton from "./FundingCancelButton";
+import { isFundingBeforeDeadline } from "@/lib/deadline";
 
 type Props = {
     fundingId: number;
@@ -31,14 +32,10 @@ export default function FundingCancelActions({
     useEffect(() => {
         if (status !== "OPEN") return;
 
-        const deadlineString = /(?:Z|[+-]\d{2}:\d{2})$/i.test(expiredAt)
-            ? expiredAt
-            : `${expiredAt}+09:00`;
-
-        const deadline = new Date(deadlineString).getTime();
-
         function checkDeadline() {
-            setCanCancel(Date.now() < deadline);
+            setCanCancel(
+                isFundingBeforeDeadline(expiredAt, Date.now())
+            );
         }
 
         const interval = window.setInterval(checkDeadline, 1000);

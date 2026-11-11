@@ -4,22 +4,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { isFundingBeforeDeadline } from "@/lib/deadline";
 
 type Props = {
     fundingId: number;
     expiredAt: string;
     status: "OPEN" | "COMPLETED" | "EXPIRED" | "CANCELLED";
 };
-
-function getDeadlineTime(expiredAt: string): number {
-    const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(expiredAt);
-
-    const dateString = hasTimezone
-        ? expiredAt
-        : `${expiredAt}+09:00`;
-
-    return new Date(dateString).getTime();
-}
 
 export default function FundingDeadlineActions({
                                                    fundingId,
@@ -32,10 +23,10 @@ export default function FundingDeadlineActions({
     useEffect(() => {
         if (status !== "OPEN") return;
 
-        const deadline = getDeadlineTime(expiredAt);
-
         function checkDeadline() {
-            setDeadlinePassed(Date.now() >= deadline);
+            setDeadlinePassed(
+                !isFundingBeforeDeadline(expiredAt, Date.now())
+            );
         }
 
         checkDeadline();
