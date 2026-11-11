@@ -13,7 +13,7 @@ export default function FundingCompleted({
                                              participantCount,
                                          }: Props) {
     return (
-        <div className="rounded-2xl border border-[#d8eee9] bg-white p-6 text-center">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
             <div className="mb-4 text-5xl">🎁</div>
 
             <h2 className="text-xl font-bold text-gray-900">
@@ -26,18 +26,18 @@ export default function FundingCompleted({
                 목표 금액을 달성했어요.
             </p>
 
-            <div className="mt-7 rounded-xl bg-[#e9f7f4] p-5">
+            <div className="mt-7 rounded-xl bg-gray-50 p-5">
                 <p className="text-sm text-gray-500">{productName}</p>
 
-                <p className="mt-2 text-2xl font-bold text-[#328c82]">
+                <p className="mt-2 text-2xl font-bold text-[#606471]">
                     {targetAmount.toLocaleString()}원
                 </p>
 
                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-gray-200">
-                    <div className="h-full w-full bg-[#328c82]" />
+                    <div className="h-full w-full bg-[#606471]" />
                 </div>
 
-                <p className="mt-3 text-sm font-semibold text-[#328c82]">
+                <p className="mt-3 text-sm font-semibold text-[#606471]">
                     목표 달성 100%
                 </p>
             </div>
@@ -53,7 +53,7 @@ export default function FundingCompleted({
 
             <Link
                 href="/wishlist"
-                className="mt-7 block rounded-xl bg-[#328c82] py-4 font-semibold text-white"
+                className="mt-7 block rounded-xl bg-[#606471] py-4 font-semibold text-white"
             >
                 위시리스트로 돌아가기
             </Link>
