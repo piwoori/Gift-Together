@@ -75,7 +75,7 @@ export default function FundingDeadlineActions({
     return (
         <Link
             href={`/fundings/${fundingId}/contribute`}
-            className="block w-full rounded-xl bg-[#328c82] py-4 text-center font-semibold text-white"
+            className="block w-full rounded-xl bg-[#606471] py-4 text-center font-semibold text-white transition hover:bg-[#4f535f]"
         >
             이 선물에 참여하기 🎁
         </Link>
