@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isFundingBeforeDeadline } from "@/lib/deadline";
 
 type FundingStatus = "OPEN" | "COMPLETED" | "EXPIRED" | "CANCELLED";
 
@@ -14,16 +15,6 @@ type FundingInfo = {
     expiredAt: string;
     remainingAmount: number;
 };
-
-function getDeadlineTime(expiredAt: string): number {
-    const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(expiredAt);
-
-    const dateString = hasTimezone
-        ? expiredAt
-        : `${expiredAt}+09:00`;
-
-    return new Date(dateString).getTime();
-}
 
 export default function ContributePage() {
     const params = useParams<{ fundingId: string }>();
@@ -37,7 +28,7 @@ export default function ContributePage() {
 
     const [funding, setFunding] = useState<FundingInfo | null>(null);
     const [fundingLoading, setFundingLoading] = useState(true);
-    const [deadlinePassed, setDeadlinePassed] = useState(false);
+    const [deadlinePassed, setDeadlinePassed] = useState(true);
 
     // 1. 펀딩 정보 조회
     useEffect(() => {
@@ -88,11 +79,11 @@ export default function ContributePage() {
     useEffect(() => {
         if (!funding || funding.status !== "OPEN") return;
 
-        const deadline = getDeadlineTime(funding.expiredAt);
+        const expiredAt = funding.expiredAt;
 
         function checkDeadline() {
             setDeadlinePassed(
-                !Number.isFinite(deadline) || Date.now() >= deadline
+                !isFundingBeforeDeadline(expiredAt, Date.now())
             );
         }
 
@@ -106,8 +97,7 @@ export default function ContributePage() {
     const canContribute =
         !fundingLoading &&
         funding?.status === "OPEN" &&
-        !deadlinePassed &&
-        Number.isFinite(getDeadlineTime(funding.expiredAt));
+        !deadlinePassed;
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -115,7 +105,7 @@ export default function ContributePage() {
         if (
             !canContribute ||
             !funding ||
-            Date.now() >= getDeadlineTime(funding.expiredAt)
+            !isFundingBeforeDeadline(funding.expiredAt, Date.now())
         ) {
             setError("현재 참여할 수 없는 펀딩입니다.");
             return;
@@ -321,7 +311,7 @@ export default function ContributePage() {
                     <button
                         type="submit"
                         disabled={loading || !canContribute}
-                        className="w-full rounded-xl bg-[#328c82] py-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="w-full rounded-xl bg-[#606472] py-4 font-semibold text-white transition hover:bg-[#4f5360] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {loading
                             ? "참여 처리 중..."
