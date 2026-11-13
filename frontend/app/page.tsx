@@ -25,38 +25,73 @@ const steps = [
 
 export default function Home() {
   return (
-      <main className="min-h-screen bg-[#f7f9f8]">
+      <main className="min-h-screen bg-[#f7f8fa]">
         <div className="mx-auto min-h-screen max-w-md bg-white shadow-sm">
-          <Header />
+          <Header/>
 
-          <section className="px-6 pb-10 pt-12">
-          <span className="inline-flex rounded-full bg-[#e9f7f4] px-3 py-2 text-xs font-semibold text-[#328c82]">
-            함께하는 선물의 새로운 방법
-          </span>
 
-            <h1 className="mt-5 text-[32px] font-extrabold leading-[1.4] tracking-tight text-[#17212b]">
-              갖고 싶은 선물,
-              <br />
-              <span className="text-[#328c82]">친구들과 함께</span>
-              <br />
-              만들어 보세요.
-            </h1>
+          <section className="relative overflow-hidden px-6 pb-12 pt-14">
+            {/* 배경 장식 */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-20 top-4 h-52 w-52 rounded-full bg-[#f0f1f4] blur-3xl"
+            />
 
-            <p className="mt-5 text-sm leading-7 text-gray-500">
-              부담은 나누고, 기쁨은 더 크게.
-              <br />
-              원하는 만큼 마음을 모아 선물해요.
-            </p>
+            <div className="relative">
+    <span
+        className="inline-flex items-center gap-2 rounded-full bg-[#f0f1f4] px-4 py-2 text-xs font-semibold tracking-wide text-[#606472]">
+      ✨ GIFTING, TOGETHER
+    </span>
 
-            <div className="mt-8">
-              <HomeActions />
+              <h1 className="mt-7 text-[34px] font-extrabold leading-[1.38] tracking-[-0.04em] text-[#20232b]">
+                갖고 싶은 선물,
+                <br/>
+                <span className="text-[#606472]">
+        함께라면 더
+        <br/>
+        가까워져요.
+      </span>
+              </h1>
+
+              <p className="mt-6 text-[15px] leading-7 text-[#777b86]">
+                혼자 준비하기 부담스러운 선물도
+                <br/>
+                친구들과 마음을 모으면 가능해져요.
+              </p>
+
+              {/* 서비스 콘셉트 카드 */}
+              <div
+                  className="mt-9 flex items-center justify-between rounded-[24px] border border-[#e9eaee] bg-[#f7f8fa] px-6 py-6">
+                <div>
+                  <p className="text-xs font-semibold text-[#606472]">
+                    TOGETHER IS BETTER
+                  </p>
+                  <p className="mt-2 text-sm font-medium leading-6 text-gray-700">
+                    부담은 나누고,
+                    <br/>
+                    기쁨은 더 크게.
+                  </p>
+                </div>
+
+                <div
+                    aria-hidden="true"
+                    className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-5xl shadow-sm"
+                >
+                  🎁
+                </div>
+              </div>
+
+              {/* 기존 CTA 기능 유지 */}
+              <div className="mt-8">
+                <HomeActions/>
+              </div>
             </div>
           </section>
 
           <section className="px-6 pb-12">
             <div className="mb-5 flex items-end justify-between">
               <div>
-                <p className="text-xs font-semibold text-[#328c82]">
+                <p className="text-xs font-semibold text-[#606472]">
                   GIFT TOGETHER
                 </p>
                 <h2 className="mt-2 text-xl font-bold text-gray-900">
@@ -66,9 +101,10 @@ export default function Home() {
               <span className="text-xs text-gray-400">이용 예시</span>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-[#dcefeb] bg-[#f0faf7] p-6">
+            <div className="overflow-hidden rounded-3xl border border-[#e5e7eb] bg-white p-6 shadow-sm">
               <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm">
+                <div
+                    className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm">
                   🎧
                 </div>
                 <div>
@@ -78,7 +114,7 @@ export default function Home() {
                   <h3 className="mt-2 text-lg font-bold text-gray-900">
                     에어팟 프로
                   </h3>
-                  <p className="mt-1 text-xs text-[#328c82]">
+                  <p className="mt-1 text-xs text-[#606472]">
                     친구 2명이 참여했어요
                   </p>
                 </div>
@@ -87,7 +123,7 @@ export default function Home() {
               <div className="mt-7 flex items-end justify-between">
                 <div>
                   <p className="text-xs text-gray-500">현재 모인 금액</p>
-                  <p className="mt-1 text-2xl font-extrabold text-[#328c82]">
+                  <p className="mt-1 text-2xl font-extrabold text-[#606472]">
                     80,000원
                   </p>
                 </div>
@@ -102,13 +138,13 @@ export default function Home() {
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={53}
-                  className="mt-4 h-3 overflow-hidden rounded-full bg-white"
+                  className="mt-4 h-3 overflow-hidden rounded-full bg-[#e9eaee]"
               >
-                <div className="h-full w-[53.33%] rounded-full bg-[#65b9ad]" />
+                <div className="h-full w-[53.33%] rounded-full bg-[#606472]"/>
               </div>
 
               <div className="mt-3 flex items-center justify-between text-xs">
-              <span className="font-semibold text-[#328c82]">
+              <span className="font-semibold text-[#606472]">
                 53% 달성
               </span>
                 <span className="text-gray-500">
@@ -116,13 +152,13 @@ export default function Home() {
               </span>
               </div>
 
-              <div className="mt-6 rounded-2xl bg-white/80 p-4">
+              <div className="mt-6 rounded-2xl bg-[#f7f8fa] p-4">
                 <p className="text-sm font-medium text-gray-700">
                   💌 친구들이 마음을 보탰어요
                 </p>
                 <p className="mt-2 text-xs leading-6 text-gray-500">
                   한 친구는 30,000원, 다른 친구는 50,000원.
-                  <br />
+                  <br/>
                   함께 모아 선물을 완성해요.
                 </p>
               </div>
@@ -130,7 +166,7 @@ export default function Home() {
           </section>
 
           <section className="border-t border-gray-100 px-6 py-12">
-            <p className="text-xs font-semibold text-[#328c82]">
+            <p className="text-xs font-semibold text-[#606472]">
               HOW IT WORKS
             </p>
             <h2 className="mt-2 text-xl font-bold text-gray-900">
@@ -143,11 +179,12 @@ export default function Home() {
             <div className="mt-7 space-y-5">
               {steps.map((step) => (
                   <div key={step.number} className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#e9f7f4] text-2xl">
+                    <div
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f0f1f4] text-2xl">
                       {step.emoji}
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold text-[#328c82]">
+                      <p className="text-xs font-semibold text-[#606472]">
                         STEP {step.number}
                       </p>
                       <h3 className="mt-1 text-sm font-bold text-gray-900">
