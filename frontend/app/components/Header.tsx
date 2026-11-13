@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -15,10 +16,10 @@ export default function Header() {
     }
 
     return (
-        <header className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
+        <header className="flex items-center justify-between border-b border-[#eef0f2] bg-white px-6 py-5">
             <Link
                 href="/"
-                className="text-xl font-bold text-[#328c82]"
+                className="text-xl font-extrabold tracking-tight text-[#606472] transition-colors hover:text-[#4f5360]"
             >
                 Gift Together
             </Link>
@@ -28,7 +29,7 @@ export default function Header() {
                     <>
                         <Link
                             href="/fundings"
-                            className="font-medium text-gray-600 hover:text-[#328c82]"
+                            className="font-medium text-gray-600 transition-colors hover:text-[#606472]"
                         >
                             내 펀딩
                         </Link>
@@ -36,7 +37,7 @@ export default function Header() {
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="font-semibold text-[#328c82]"
+                            className="rounded-lg px-2 py-2 font-semibold text-[#606472] transition-colors hover:bg-[#f0f1f4]"
                         >
                             로그아웃
                         </button>
@@ -45,14 +46,14 @@ export default function Header() {
                     <>
                         <Link
                             href="/login"
-                            className="font-medium text-gray-600 hover:text-[#328c82]"
+                            className="font-medium text-gray-600 transition-colors hover:text-[#606472]"
                         >
                             로그인
                         </Link>
 
                         <Link
                             href="/signup"
-                            className="font-semibold text-[#328c82]"
+                            className="rounded-lg bg-[#f0f1f4] px-3 py-2 font-semibold text-[#606472] transition-colors hover:bg-[#e5e7eb]"
                         >
                             회원가입
                         </Link>
