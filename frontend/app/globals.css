@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
+
 :root {
   --background: #ffffff;
   --foreground: #17212b;
 
   /* Brand */
-  --primary: #5f6370;
-  --primary-hover: #7fa19a;
-  --accent: #37848e;
+  --primary: #606472;
+  --primary-hover: #4f5360;
+  --accent: #606472;
 
   /* Surface */
   --surface: #ffffff;
   --surface-muted: #f9fafb;
-  --surface-accent: #e9f7f4;
+  --surface-accent: #f0f1f4;
 
   /* Border */
   --border-default: #e5e7eb;
