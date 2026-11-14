@@ -117,17 +117,33 @@ export default function ProductsPage() {
                         마음에 드는 선물을 골라 위시리스트에 담아보세요.
                     </p>
 
-                    <div className="mt-7">
+
+                    <div className="relative mt-7">
                         <label htmlFor="product-search" className="sr-only">
                             상품 검색
                         </label>
+
+                        <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#9296a1]"
+                        >
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+
                         <input
                             id="product-search"
                             type="search"
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder="찾고 싶은 선물을 검색해 보세요"
-                            className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-900 outline-none transition focus:border-primary focus:bg-white"
+                            className="w-full rounded-2xl border border-[#e5e7eb] bg-[#f7f8fa] py-4 pl-12 pr-4 text-sm text-gray-900 outline-none transition-colors placeholder:text-[#9296a1] focus:border-[#606472] focus:bg-white focus:ring-2 focus:ring-[#606472]/10"
                         />
                     </div>
 
@@ -138,10 +154,10 @@ export default function ProductsPage() {
                                     key={item}
                                     className="animate-pulse rounded-2xl border border-gray-100 p-3"
                                 >
-                                    <div className="aspect-square rounded-xl bg-gray-100" />
-                                    <div className="mt-4 h-4 rounded bg-gray-100" />
-                                    <div className="mt-3 h-4 w-2/3 rounded bg-gray-100" />
-                                    <div className="mt-5 h-10 rounded-xl bg-gray-100" />
+                                    <div className="aspect-square rounded-xl bg-gray-100"/>
+                                    <div className="mt-4 h-4 rounded bg-gray-100"/>
+                                    <div className="mt-3 h-4 w-2/3 rounded bg-gray-100"/>
+                                    <div className="mt-5 h-10 rounded-xl bg-gray-100"/>
                                 </div>
                             ))}
                         </div>
@@ -161,13 +177,16 @@ export default function ProductsPage() {
                         </div>
                     ) : (
                         <>
-                            <div className="mt-7 flex items-center justify-between">
-                                <h3 className="text-sm font-bold text-gray-900">
+
+
+                            <div className="mt-8 flex items-center gap-2">
+                                <h3 className="text-base font-bold text-[#20232b]">
                                     전체 상품
                                 </h3>
-                                <span className="text-xs text-gray-400">
-                  {filteredProducts.length}개
-                </span>
+                                <span
+                                    className="rounded-full bg-[#f0f1f4] px-2.5 py-1 text-xs font-semibold text-[#606472]">
+                                    {filteredProducts.length}개
+                                </span>
                             </div>
 
                             {filteredProducts.length === 0 ? (
@@ -178,7 +197,7 @@ export default function ProductsPage() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                <div className="mt-5 grid grid-cols-2 gap-4">
                                     {filteredProducts.map((product) => {
                                         const isWishlisted = wishlistedProductIds.includes(
                                             product.productId
@@ -191,9 +210,10 @@ export default function ProductsPage() {
                                         return (
                                             <article
                                                 key={product.productId}
-                                                className="flex min-w-0 flex-col rounded-2xl border border-gray-100 bg-white p-3 shadow-sm"
+                                                className="flex min-w-0 flex-col rounded-2xl border border-[#e9eaee] bg-white p-3 transition-shadow hover:shadow-md"
                                             >
-                                                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-50">
+                                                <div
+                                                    className="relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-[#f7f8fa]">
                                                     {showImage && imageUrl ? (
                                                         <Image
                                                             src={imageUrl}
@@ -221,7 +241,7 @@ export default function ProductsPage() {
                                                     <h3 className="mt-4 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-gray-900">
                                                         {product.name}
                                                     </h3>
-                                                    <p className="mt-2 text-base font-bold text-primary">
+                                                    <p className="mt-2 text-lg font-extrabold tracking-tight text-[#606472]">
                                                         {product.price.toLocaleString("ko-KR")}원
                                                     </p>
 
