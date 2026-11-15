@@ -7,6 +7,34 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getProducts, type Product } from "@/lib/product";
 
+function SelectedProductImage({
+                                  imageUrl,
+                                  productName,
+                              }: {
+    imageUrl: string | null;
+    productName: string;
+}) {
+    const [failed, setFailed] = useState(false);
+
+    return (
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f7f8fa]">
+            {imageUrl && !failed ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={imageUrl}
+                    alt={productName}
+                    className="h-full w-full object-contain p-2"
+                    onError={() => setFailed(true)}
+                />
+            ) : (
+                <span aria-hidden="true" className="text-4xl">
+          🎁
+        </span>
+            )}
+        </div>
+    );
+}
+
 function FundingCreateForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -114,34 +142,36 @@ function FundingCreateForm() {
     }
 
     return (
-        <main className="min-h-screen bg-[#f8f9fa]">
-            <div className="mx-auto min-h-screen max-w-md bg-white">
-                <header className="flex items-center gap-4 border-b border-gray-100 px-6 py-6">
+        <main className="min-h-screen bg-[#f7f8fa]">
+            <div className="mx-auto min-h-screen max-w-md bg-white shadow-sm">
+                <header className="flex items-center gap-4 border-b border-[#eef0f2] px-6 py-5">
                     <Link
                         href="/wishlist"
                         aria-label="위시리스트로 돌아가기"
-                        className="text-2xl text-gray-500 transition hover:text-gray-900"
+                        className="text-2xl text-[#606472] transition-colors hover:text-[#20232b]"
                     >
                         ←
                     </Link>
-                    <h1 className="text-lg font-bold text-gray-900">
+                    <h1 className="text-lg font-bold text-[#20232b]">
                         공동 선물 만들기
                     </h1>
                 </header>
 
-                <form onSubmit={handleSubmit} className="px-6 pb-12 pt-10">
+                <form onSubmit={handleSubmit} className="px-6 pb-12 pt-12">
                     <div className="mb-10">
-                        <p className="text-xs font-bold tracking-wider text-primary">
+                        <p className="text-xs font-semibold tracking-wide text-[#606472]">
                             CREATE A GIFT
                         </p>
-                        <h2 className="mt-3 text-2xl font-bold text-gray-900">
+
+                        <h2 className="mt-3 text-[26px] font-extrabold leading-[1.4] tracking-tight text-[#20232b]">
                             함께 받을 선물을
-                            <br />
+                            <br/>
                             준비해 볼까요?
                         </h2>
-                        <p className="mt-4 text-sm leading-7 text-gray-500">
+
+                        <p className="mt-4 text-sm leading-7 text-[#858995]">
                             원하는 선물과 마감일을 정하면
-                            <br />
+                            <br/>
                             친구들과 함께 선물 금액을 모을 수 있어요.
                         </p>
                     </div>
@@ -162,10 +192,10 @@ function FundingCreateForm() {
                         {productLoading ? (
                             <div className="animate-pulse rounded-2xl border border-gray-100 p-5">
                                 <div className="flex gap-4">
-                                    <div className="h-24 w-24 rounded-xl bg-gray-100" />
+                                    <div className="h-24 w-24 rounded-xl bg-gray-100"/>
                                     <div className="flex-1 space-y-3 py-3">
-                                        <div className="h-4 w-3/4 rounded bg-gray-100" />
-                                        <div className="h-5 w-1/2 rounded bg-gray-100" />
+                                        <div className="h-4 w-3/4 rounded bg-gray-100"/>
+                                        <div className="h-5 w-1/2 rounded bg-gray-100"/>
                                     </div>
                                 </div>
                             </div>
@@ -183,11 +213,13 @@ function FundingCreateForm() {
                                 </Link>
                             </div>
                         ) : product ? (
-                            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div className="rounded-3xl border border-[#e9eaee] bg-white p-5 shadow-sm">
                                 <div className="flex items-center gap-4">
-                                    <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-4xl">
-                                        🎁
-                                    </div>
+                                    <SelectedProductImage
+                                        key={`${product.productId}-${product.imageUrl ?? ""}`}
+                                        imageUrl={product.imageUrl}
+                                        productName={product.name}
+                                    />
                                     <div className="min-w-0">
                                         <p className="text-xs font-medium text-gray-400">
                                             GIFT ITEM
