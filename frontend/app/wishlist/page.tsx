@@ -5,7 +5,7 @@ export default function WishlistPage() {
     return (
         <Suspense
             fallback={
-                <main className="min-h-screen bg-[#f8faf9]">
+                <main className="min-h-screen bg-[#f7f8fa]">
                     <div className="mx-auto min-h-screen max-w-md bg-white px-6 py-8">
                         <p className="text-sm text-gray-500">
                             위시리스트를 불러오는 중...

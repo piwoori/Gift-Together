@@ -9,6 +9,34 @@ import {
     type WishlistItem,
 } from "@/lib/wishlist";
 
+function WishlistProductImage({
+                                  imageUrl,
+                                  productName,
+                              }: {
+    imageUrl: string | null;
+    productName: string;
+}) {
+    const [failed, setFailed] = useState(false);
+
+    return (
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f7f8fa]">
+            {imageUrl && !failed ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={imageUrl}
+                    alt={productName}
+                    className="h-full w-full object-contain p-2"
+                    onError={() => setFailed(true)}
+                />
+            ) : (
+                <span aria-hidden="true" className="text-4xl">
+          🎁
+        </span>
+            )}
+        </div>
+    );
+}
+
 export default function WishlistContent() {
     const [items, setItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,7 +96,7 @@ export default function WishlistContent() {
     }
 
     return (
-        <main className="min-h-screen bg-[#f8faf9]">
+        <main className="min-h-screen bg-[#f7f8fa]">
             <div className="mx-auto min-h-screen max-w-md bg-white shadow-sm">
                 <header className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
                     <div className="flex items-center gap-4">
@@ -104,7 +132,7 @@ export default function WishlistContent() {
 
                     <p className="mt-3 text-sm leading-6 text-gray-500">
                         마음에 드는 선물을 담고,
-                        <br />
+                        <br/>
                         친구들과 함께 선물을 완성해 보세요.
                     </p>
 
@@ -149,8 +177,10 @@ export default function WishlistContent() {
                             </button>
                         </div>
                     ) : items.length === 0 ? (
-                        <div className="mt-10 rounded-3xl border border-gray-100 bg-surface-muted px-6 py-12 text-center">
-                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm">
+                        <div
+                            className="mt-10 rounded-3xl border border-gray-100 bg-surface-muted px-6 py-12 text-center">
+                            <div
+                                className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm">
                                 🎁
                             </div>
 
@@ -160,7 +190,7 @@ export default function WishlistContent() {
 
                             <p className="mt-3 text-sm leading-6 text-gray-500">
                                 받고 싶은 선물을 찾아
-                                <br />
+                                <br/>
                                 위시리스트에 담아보세요.
                             </p>
 
@@ -173,26 +203,28 @@ export default function WishlistContent() {
                         </div>
                     ) : (
                         <>
-                            <div className="mt-10 flex items-center justify-between">
-                                <h3 className="text-base font-bold text-gray-900">
+
+                            <div className="mt-10 flex items-center gap-2">
+                                <h3 className="text-base font-bold text-[#20232b]">
                                     담아둔 선물
                                 </h3>
-
-                                <span className="text-sm text-gray-400">
-                  {items.length}개
-                </span>
+                                <span
+                                    className="rounded-full bg-[#f0f1f4] px-2.5 py-1 text-xs font-semibold text-[#606472]">
+                                    {items.length}개
+                                </span>
                             </div>
 
                             <div className="mt-5 space-y-4">
                                 {items.map((item) => (
                                     <article
                                         key={item.wishlistItemId}
-                                        className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+                                        className="rounded-3xl border border-[#e9eaee] bg-white p-5 shadow-sm"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-surface-muted text-4xl">
-                                                🎁
-                                            </div>
+                                            <WishlistProductImage
+                                                imageUrl={item.imageUrl}
+                                                productName={item.productName}
+                                            />
 
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-xs font-medium text-gray-400">
@@ -203,7 +235,7 @@ export default function WishlistContent() {
                                                     {item.productName}
                                                 </h4>
 
-                                                <p className="mt-3 text-lg font-bold text-primary">
+                                                <p className="mt-3 text-lg font-extrabold tracking-tight text-[#606472]">
                                                     {item.price.toLocaleString("ko-KR")}원
                                                 </p>
                                             </div>
@@ -221,7 +253,7 @@ export default function WishlistContent() {
                                                 type="button"
                                                 onClick={() => handleDelete(item.wishlistItemId)}
                                                 disabled={deletingId !== null}
-                                                className="mt-3 w-full rounded-xl py-2 text-sm font-medium text-gray-400 transition hover:bg-gray-50 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="mt-3 w-full rounded-xl border border-transparent py-3 text-sm font-medium text-[#858995] transition-colors hover:border-red-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 {deletingId === item.wishlistItemId
                                                     ? "삭제 중..."
@@ -234,7 +266,7 @@ export default function WishlistContent() {
 
                             <Link
                                 href="/products"
-                                className="mt-6 block rounded-2xl border border-dashed border-gray-300 py-5 text-center text-sm font-semibold text-gray-500 transition hover:bg-gray-50"
+                                className="mt-6 block rounded-2xl border border-dashed border-[#d9dce3] bg-white py-5 text-center text-sm font-semibold text-[#606472] transition-colors hover:border-[#606472] hover:bg-[#f7f8fa]"
                             >
                                 + 다른 선물 더 둘러보기
                             </Link>
