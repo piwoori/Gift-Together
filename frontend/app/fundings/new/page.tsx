@@ -263,7 +263,7 @@ function FundingCreateForm() {
                                 setExpiredAt(e.target.value);
                                 setError("");
                             }}
-                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-900 outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-gray-100"
+                            className="w-full rounded-2xl border border-[#e5e7eb] bg-[#f7f8fa] px-4 py-4 text-sm text-[#20232b] outline-none transition-colors focus:border-[#606472] focus:bg-white focus:ring-2 focus:ring-[#606472]/10"
                         />
                         <p className="mt-3 text-xs text-gray-400">
                             현재 시각보다 미래의 날짜와 시간을 선택해 주세요.
@@ -289,7 +289,7 @@ function FundingCreateForm() {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             placeholder={"이번 생일에는 이 선물을 받고 싶어요! 🎂\n조금씩 마음을 보태주세요."}
-                            className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm leading-7 text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:bg-white focus:ring-2 focus:ring-gray-100"
+                            className="w-full resize-none rounded-2xl border border-[#e5e7eb] bg-[#f7f8fa] px-4 py-4 text-sm leading-7 text-[#20232b] outline-none transition-colors placeholder:text-[#9296a1] focus:border-[#606472] focus:bg-white focus:ring-2 focus:ring-[#606472]/10"
                         />
                     </section>
 
@@ -297,11 +297,15 @@ function FundingCreateForm() {
                         <p className="mb-3 text-sm font-bold text-gray-800">
                             🎁 공동 선물 안내
                         </p>
-                        <p className="text-xs leading-6 text-gray-500">
-                            친구들이 원하는 금액만큼 참여해 목표 금액을 함께
-                            모을 수 있어요. 목표 금액 달성 후 선물 완료 여부와
-                            마감 시 미달 금액의 처리 방식은 서비스 정책에 따라
-                            결정돼요.
+                        <p className="mt-3 text-sm leading-7 text-[#777b86]">
+                            친구들이 원하는 금액만큼 참여해
+                            목표 금액을 함께 모을 수 있어요.
+                            <br />
+                            <br />
+                            현재는 실제 결제가 아닌 모의 결제로 진행돼요.
+                            목표 금액을 달성하면 모의 선물 구매가 완료되고,
+                            마감일까지 목표 금액을 모으지 못하면
+                            모인 금액은 선물 받는 사람의 모의 지갑으로 전달돼요.
                         </p>
                     </div>
 
