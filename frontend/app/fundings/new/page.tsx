@@ -321,7 +321,7 @@ function FundingCreateForm() {
                     <button
                         type="submit"
                         disabled={loading || productLoading || !product}
-                        className="w-full rounded-2xl bg-primary py-4 text-base font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex min-h-14 w-full items-center justify-center rounded-2xl bg-[#606472] px-5 py-4 text-center text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#4f5360] hover:shadow-md active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#606472] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#606472] disabled:hover:shadow-sm disabled:active:scale-100"
                     >
                         {loading ? "펀딩 생성 중..." : "🎁 공동 선물 만들기"}
                     </button>
