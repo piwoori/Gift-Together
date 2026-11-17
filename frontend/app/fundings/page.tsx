@@ -72,9 +72,9 @@ export default function MyFundingsPage() {
             : fundings.filter((funding) => funding.status === filter);
 
     return (
-        <main className="min-h-screen bg-[#f8f9fa]">
+        <main className="min-h-screen bg-[#f7f8fa]">
             <div className="mx-auto min-h-screen max-w-md bg-white shadow-sm">
-                <header className="flex items-center gap-4 border-b border-gray-100 px-6 py-5">
+                <header className="flex items-center gap-4 border-b border-[#eef0f2] px-6 py-5">
                     <Link
                         href="/"
                         aria-label="홈으로 돌아가기"
@@ -88,22 +88,22 @@ export default function MyFundingsPage() {
                     </h1>
                 </header>
 
-                <section className="px-6 pb-12 pt-10">
-                    <p className="text-xs font-bold tracking-wider text-primary">
+                <section className="px-6 pb-12 pt-12">
+                    <p className="text-xs font-semibold tracking-wide text-[#606472]">
                         MY GIFT FUNDINGS
                     </p>
 
-                    <h2 className="mt-3 text-2xl font-bold text-gray-900">
+                    <h2 className="mt-3 text-[26px] font-extrabold leading-[1.4] tracking-tight text-[#20232b]">
                         내가 만든 공동 선물
                     </h2>
 
-                    <p className="mt-3 text-sm leading-7 text-gray-500">
+                    <p className="mt-4 text-sm leading-7 text-[#858995]">
                         친구들과 함께 만드는 특별한 선물.
-                        <br />
+                        <br/>
                         펀딩 진행 상황을 한눈에 확인해 보세요.
                     </p>
 
-                    <div className="mt-9 flex gap-2 overflow-x-auto pb-3">
+                    <div className="mt-10 flex gap-2 overflow-x-auto pb-3">
                         {filters.map((item) => {
                             const selected = filter === item.value;
 
@@ -189,7 +189,8 @@ export default function MyFundingsPage() {
                                                 className="block rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:shadow-md"
                                             >
                                                 <div className="flex items-start gap-4">
-                                                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gray-50 text-4xl">
+                                                    <div
+                                                        className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gray-50 text-4xl">
                                                         🎁
                                                     </div>
 
@@ -239,7 +240,7 @@ export default function MyFundingsPage() {
                                                     >
                                                         <div
                                                             className="h-full rounded-full bg-primary transition-all"
-                                                            style={{ width: `${percentage}%` }}
+                                                            style={{width: `${percentage}%`}}
                                                         />
                                                     </div>
 
