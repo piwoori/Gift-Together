@@ -103,7 +103,11 @@ export default function MyFundingsPage() {
                         펀딩 진행 상황을 한눈에 확인해 보세요.
                     </p>
 
-                    <div className="mt-10 flex gap-2 overflow-x-auto pb-3">
+                    <div
+                        role="group"
+                        aria-label="펀딩 상태 필터"
+                        className="mt-10 flex gap-2 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
                         {filters.map((item) => {
                             const selected = filter === item.value;
 
@@ -113,10 +117,10 @@ export default function MyFundingsPage() {
                                     type="button"
                                     onClick={() => setFilter(item.value)}
                                     aria-pressed={selected}
-                                    className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                                    className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#606472] ${
                                         selected
-                                            ? "bg-primary text-white"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                            ? "border-[#606472] bg-[#606472] text-white shadow-sm"
+                                            : "border-transparent bg-[#f0f1f4] text-[#606472] hover:border-[#d9dbe1] hover:bg-[#e9eaee]"
                                     }`}
                                 >
                                     {item.label}
