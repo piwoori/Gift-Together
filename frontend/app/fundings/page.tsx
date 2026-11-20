@@ -24,10 +24,10 @@ const statusLabels: Record<FundingStatus, string> = {
 };
 
 const statusStyles: Record<FundingStatus, string> = {
-    OPEN: "bg-blue-50 text-blue-700",
-    COMPLETED: "bg-emerald-50 text-emerald-700",
-    EXPIRED: "bg-gray-100 text-gray-600",
-    CANCELLED: "bg-red-50 text-red-600",
+    OPEN: "border-[#d9dce5] bg-[#eef0f5] text-[#606472]",
+    COMPLETED: "border-[#d8e8df] bg-[#edf7f0] text-[#397856]",
+    EXPIRED: "border-[#e5e7eb] bg-[#f3f4f6] text-[#777b86]",
+    CANCELLED: "border-[#f0dddd] bg-[#fdf1f1] text-[#b65b5b]",
 };
 
 export default function MyFundingsPage() {
@@ -190,7 +190,7 @@ export default function MyFundingsPage() {
                                             <Link
                                                 key={funding.fundingId}
                                                 href={`/fundings/${funding.fundingId}`}
-                                                className="block rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-300 hover:shadow-md"
+                                                className="block rounded-3xl border border-[#e5e7eb] bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c9ccd5] hover:shadow-md"
                                             >
                                                 <div className="flex items-start gap-4">
                                                     <div
@@ -199,13 +199,13 @@ export default function MyFundingsPage() {
                                                     </div>
 
                                                     <div className="min-w-0 flex-1">
-                            <span
-                                className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${
-                                    statusStyles[funding.status]
-                                }`}
-                            >
-                              {statusLabels[funding.status]}
-                            </span>
+                                                    <span
+                                                        className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                                                            statusStyles[funding.status]
+                                                        }`}
+                                                    >
+                                                      {statusLabels[funding.status]}
+                                                    </span>
 
                                                         <h4 className="mt-2 truncate text-base font-bold text-gray-900">
                                                             {funding.productName}
@@ -235,7 +235,7 @@ export default function MyFundingsPage() {
                                                     </div>
 
                                                     <div
-                                                        className="mt-4 h-2 overflow-hidden rounded-full bg-gray-100"
+                                                        className="mt-4 h-3 overflow-hidden rounded-full bg-[#e9eaee]"
                                                         role="progressbar"
                                                         aria-label={`${funding.productName} 펀딩 달성률`}
                                                         aria-valuemin={0}
@@ -247,10 +247,21 @@ export default function MyFundingsPage() {
                                                             style={{width: `${percentage}%`}}
                                                         />
                                                     </div>
+                                                    
+                                                    <div className="mt-4 flex items-center justify-between gap-3">
+                                                        <p className="text-xs text-[#858995]">
+                                                            {funding.status === "COMPLETED"
+                                                                ? "🎉 목표 금액을 달성했어요"
+                                                                : `${Math.max(
+                                                                    0,
+                                                                    funding.targetAmount - funding.currentAmount
+                                                                ).toLocaleString("ko-KR")}원 남았어요`}
+                                                        </p>
 
-                                                    <p className="mt-4 text-right text-xs font-medium text-gray-400">
-                                                        펀딩 자세히 보기 →
-                                                    </p>
+                                                        <span className="shrink-0 text-xs font-semibold text-[#606472]">
+                                                            자세히 보기 →
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </Link>
                                         );
