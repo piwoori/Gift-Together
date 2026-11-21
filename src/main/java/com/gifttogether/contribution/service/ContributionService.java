@@ -6,7 +6,6 @@ import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.dto.ContributionResponse;
 import com.gifttogether.contribution.repository.ContributionRepository;
-import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.common.exception.ContributionNotFoundException;
 import com.gifttogether.common.exception.FundingNotFoundException;
 import com.gifttogether.common.exception.UserNotFoundException;
@@ -19,15 +18,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.gifttogether.payment.domain.Payment;
 import com.gifttogether.payment.repository.PaymentRepository;
-import com.gifttogether.funding.domain.FundingStatus;
+import com.gifttogether.funding.domain.FundingTime;
 import com.gifttogether.contribution.dto.MyContributionResponse;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ContributionService {
 
+    private final Clock clock;
     private final FundingRepository fundingRepository;
     private final UserRepository userRepository;
     private final ContributionRepository contributionRepository;
@@ -44,6 +46,13 @@ public class ContributionService {
 
         User contributor = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
+
+        LocalDateTime now = FundingTime.now(clock);
+        if (request.simulatePaymentFailure()) {
+            funding.validateContribution(request.amount(), now);
+        } else {
+            funding.contribute(request.amount(), now);
+        }
 
         Contribution contribution = new Contribution(
                 funding,
@@ -70,8 +79,6 @@ public class ContributionService {
 
         payment.success();
         paymentRepository.save(payment);
-
-        funding.contribute(request.amount());
 
         savedContribution.complete();
 
@@ -103,11 +110,8 @@ public class ContributionService {
                 .findByIdWithLock(fundingId)
                 .orElseThrow(FundingNotFoundException::new);
 
-        if (funding.getStatus() != FundingStatus.OPEN) {
-            throw new ConflictException(
-                    "진행 중인 펀딩의 참여만 취소할 수 있습니다."
-            );
-        }
+        LocalDateTime now = FundingTime.now(clock);
+        funding.validateContributionCancellation(now);
 
         Payment payment = paymentRepository
                 .findByContributionId(contributionId)
@@ -118,7 +122,7 @@ public class ContributionService {
                 );
 
         payment.cancel();
-        funding.cancelContribution(contribution.getAmount());
+        funding.cancelContribution(contribution.getAmount(), now);
         contribution.cancel();
     }
 

@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import com.gifttogether.wallet.repository.WalletTransactionRepository;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,7 +79,7 @@ class FundingExpirationTest {
                 new Funding(
                         receiver,
                         product,
-                        LocalDateTime.now().plusMinutes(10),
+                        LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(10),
                         "만료 테스트"
                 )
         );
@@ -97,7 +98,7 @@ class FundingExpirationTest {
         // 실제 expiredAt보다 미래로 전달
         fundingService.expireFunding(
                 funding.getId(),
-                LocalDateTime.now().plusMinutes(20)
+                LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(20)
         );
 
         // when
@@ -149,7 +150,7 @@ class FundingExpirationTest {
                 new Funding(
                         receiver,
                         product,
-                        LocalDateTime.now().plusMinutes(10),
+                        LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(10),
                         "중복 만료 테스트"
                 )
         );
@@ -165,7 +166,7 @@ class FundingExpirationTest {
         );
 
         LocalDateTime expirationTime =
-                LocalDateTime.now().plusMinutes(20);
+                LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusMinutes(20);
 
         // when
         fundingService.expireFunding(

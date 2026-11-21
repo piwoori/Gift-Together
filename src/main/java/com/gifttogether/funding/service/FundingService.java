@@ -1,6 +1,7 @@
 package com.gifttogether.funding.service;
 
 import java.util.List;
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 import com.gifttogether.contribution.domain.ContributionStatus;
@@ -8,6 +9,7 @@ import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.BadRequestException;
 import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.funding.domain.Funding;
+import com.gifttogether.funding.domain.FundingTime;
 import com.gifttogether.funding.dto.FundingCreateRequest;
 import com.gifttogether.funding.dto.FundingCreateResponse;
 import com.gifttogether.funding.dto.FundingListResponse;
@@ -37,6 +39,7 @@ import com.gifttogether.funding.domain.FundingStatus;
 @RequiredArgsConstructor
 public class FundingService {
 
+    private final Clock clock;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final WishlistItemRepository wishlistItemRepository;
@@ -83,7 +86,7 @@ public class FundingService {
     ) {
         // 마감일이 현재보다 미래인지 검증
         if (request.expiredAt() == null ||
-                !request.expiredAt().isAfter(LocalDateTime.now())) {
+                !request.expiredAt().isAfter(FundingTime.now(clock))) {
             throw new BadRequestException(
                     "펀딩 마감일은 현재보다 미래여야 합니다."
             );
@@ -124,6 +127,8 @@ public class FundingService {
             throw new ForbiddenException("펀딩 생성자만 취소할 수 있습니다.");
         }
 
+        funding.cancel(FundingTime.now(clock));
+
         List<Contribution> contributions =
                 contributionRepository.findAllByFundingIdAndStatus(
                         fundingId,
@@ -139,8 +144,6 @@ public class FundingService {
             payment.cancel();
             contribution.refund();
         }
-
-        funding.cancel();
     }
 
     @Transactional

@@ -486,6 +486,12 @@ Swagger에서는 `Authorize` 기능을 통해 사용자 ID를 설정할 수 있�
 
 ---
 
+펀딩 마감 시각 `expiredAt`은 API와 데이터베이스에서 시간대 오프셋이 없는
+`LocalDateTime`을 사용하며, 한국 시간(`Asia/Seoul`)으로 해석합니다.
+예를 들어 `2026-12-01T18:00:00`은 한국 시간 18시이고 UTC 09시입니다.
+참여, 본인 참여 취소, 펀딩 전체 취소는 마감 시각 직전까지 가능하며,
+마감 정각부터는 만료 스케줄러가 아직 실행되지 않았어도 서버가 거절합니다.
+
 ## 🧪 테스트
 
 비즈니스 규칙뿐 아니라 API, 예외 처리, 스케줄러 및 동시성 상황을 테스트합니다.
@@ -525,6 +531,14 @@ WishlistApiTest
 ```
 
 > `ContributionConcurrencyTest`는 Testcontainers를 사용하므로 Docker 호환 런타임이 필요합니다.
+
+마감 시각 테스트는 UTC 서버에서도 실행할 수 있습니다.
+
+```bash
+TZ=UTC ./gradlew test --tests '*FundingDeadline*' --tests '*FundingExpirationSchedulerTest'
+cd frontend
+TZ=UTC node --test tests/deadline.test.mjs
+```
 
 ---
 

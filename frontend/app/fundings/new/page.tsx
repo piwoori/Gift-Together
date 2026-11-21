@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { isFundingBeforeDeadline } from "@/lib/deadline";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { getProducts, type Product } from "@/lib/product";
@@ -105,9 +106,7 @@ function FundingCreateForm() {
             return;
         }
 
-        const deadline = new Date(expiredAt).getTime();
-
-        if (!expiredAt || !Number.isFinite(deadline) || deadline <= Date.now()) {
+        if (!isFundingBeforeDeadline(expiredAt, Date.now())) {
             setError("현재보다 미래의 마감일을 선택해 주세요.");
             return;
         }
@@ -249,7 +248,7 @@ function FundingCreateForm() {
                             htmlFor="expiredAt"
                             className="mb-3 block text-base font-bold text-gray-900"
                         >
-                            펀딩 마감일 <span className="text-red-500">*</span>
+                            펀딩 마감일 (한국 시간) <span className="text-red-500">*</span>
                         </label>
                         <p className="mb-4 text-sm leading-6 text-gray-500">
                             친구들이 언제까지 참여할 수 있을지 정해 주세요.

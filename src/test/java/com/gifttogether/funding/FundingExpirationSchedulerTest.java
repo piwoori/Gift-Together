@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,7 +60,7 @@ class FundingExpirationSchedulerTest {
                 new Funding(
                         receiver,
                         product,
-                        LocalDateTime.now().minusMinutes(10),
+                        LocalDateTime.now(ZoneId.of("Asia/Seoul")).minusMinutes(10),
                         "이미 마감된 펀딩"
                 )
         );
@@ -68,7 +69,7 @@ class FundingExpirationSchedulerTest {
                 new Funding(
                         receiver,
                         product,
-                        LocalDateTime.now().plusDays(1),
+                        LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(1),
                         "아직 진행 중인 펀딩"
                 )
         );

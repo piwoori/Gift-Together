@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,17 +19,23 @@ import java.time.LocalDateTime;
 public class Funding {
 
     public void contribute(Long amount) {
-        contribute(amount, LocalDateTime.now());
+        contribute(amount, FundingTime.now(Clock.systemUTC()));
     }
 
     public void contribute(Long amount, LocalDateTime now) {
-        if (this.status != FundingStatus.OPEN) {
-            throw new ConflictException("진행 중인 펀딩이 아닙니다.");
+        validateContribution(amount, now);
+
+        this.currentAmount += amount;
+
+        if (this.currentAmount.equals(this.targetAmount)) {
+            this.status = FundingStatus.COMPLETED;
         }
 
-        if (!now.isBefore(expiredAt)) {
-            throw new ConflictException("마감된 펀딩입니다.");
-        }
+        this.updatedAt = now;
+    }
+
+    public void validateContribution(Long amount, LocalDateTime now) {
+        requireOpenBeforeDeadline(now, "진행 중인 펀딩이 아닙니다.");
 
         if (amount < 1000) {
             throw new BadRequestException("최소 참여 금액은 1,000원입니다.");
@@ -42,14 +49,6 @@ public class Funding {
                     "남은 금액을 초과할 수 없습니다."
             );
         }
-
-        this.currentAmount += amount;
-
-        if (this.currentAmount.equals(this.targetAmount)) {
-            this.status = FundingStatus.COMPLETED;
-        }
-
-        this.updatedAt = now;
     }
 
     @Id
@@ -99,14 +98,16 @@ public class Funding {
         this.status = FundingStatus.OPEN;
         this.message = message;
         this.expiredAt = expiredAt;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = FundingTime.now(Clock.systemUTC());
+        this.updatedAt = this.createdAt;
     }
 
-    public void cancelContribution(Long amount) {
-        if (this.status != FundingStatus.OPEN) {
-            throw new ConflictException("진행 중인 펀딩에서만 참여를 취소할 수 있습니다.");
-        }
+    public void validateContributionCancellation(LocalDateTime now) {
+        requireOpenBeforeDeadline(now, "진행 중인 펀딩의 참여만 취소할 수 있습니다.");
+    }
+
+    public void cancelContribution(Long amount, LocalDateTime now) {
+        validateContributionCancellation(now);
 
         if (amount <= 0) {
             throw new BadRequestException("취소 금액은 0원보다 커야 합니다.");
@@ -117,17 +118,28 @@ public class Funding {
         }
 
         this.currentAmount -= amount;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = now;
     }
 
     public void cancel() {
-        if (this.status != FundingStatus.OPEN) {
-            throw new ConflictException("진행 중인 펀딩만 취소할 수 있습니다.");
-        }
+        cancel(FundingTime.now(Clock.systemUTC()));
+    }
+
+    public void cancel(LocalDateTime now) {
+        requireOpenBeforeDeadline(now, "진행 중인 펀딩만 취소할 수 있습니다.");
 
         this.status = FundingStatus.CANCELLED;
         this.currentAmount = 0L;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = now;
+    }
+
+    private void requireOpenBeforeDeadline(LocalDateTime now, String invalidStatusMessage) {
+        if (this.status != FundingStatus.OPEN) {
+            throw new ConflictException(invalidStatusMessage);
+        }
+        if (!now.isBefore(expiredAt)) {
+            throw new ConflictException("마감된 펀딩입니다.");
+        }
     }
 
     public void expire(LocalDateTime now) {
