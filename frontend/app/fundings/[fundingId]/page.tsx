@@ -54,6 +54,27 @@ const statusStyles: Record<Funding["status"], string> = {
 const formatMoney = (amount: number) =>
     `${amount.toLocaleString("ko-KR")}원`;
 
+const formatDeadline = (expiredAt: string) => {
+    const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(expiredAt);
+    const date = new Date(
+        hasTimezone ? expiredAt : `${expiredAt}+09:00`
+    );
+
+    if (Number.isNaN(date.getTime())) {
+        return expiredAt;
+    }
+
+    return new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    }).format(date);
+};
+
 export default async function FundingDetailPage({
                                                     params,
                                                 }: {
@@ -198,7 +219,7 @@ export default async function FundingDetailPage({
                             <div className="flex items-center justify-between gap-4">
                                 <span className="shrink-0 text-gray-500">마감일</span>
                                 <span className="text-right font-semibold text-gray-800">
-                  {funding.expiredAt.replace("T", " ")}
+                  {formatDeadline(funding.expiredAt)}
                 </span>
                             </div>
                         </div>
