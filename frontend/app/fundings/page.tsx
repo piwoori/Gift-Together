@@ -247,7 +247,7 @@ export default function MyFundingsPage() {
                                                             style={{width: `${percentage}%`}}
                                                         />
                                                     </div>
-                                                    
+
                                                     <div className="mt-4 flex items-center justify-between gap-3">
                                                         <p className="text-xs text-[#858995]">
                                                             {funding.status === "COMPLETED"
