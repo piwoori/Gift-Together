@@ -2,6 +2,7 @@ package com.gifttogether.payment.domain;
 
 import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.common.exception.ConflictException;
+import com.gifttogether.funding.domain.FundingTime;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -46,12 +47,16 @@ public class Payment {
     }
 
     public void success() {
+        success(FundingTime.now());
+    }
+
+    public void success(LocalDateTime now) {
         if (this.status != PaymentStatus.READY) {
             throw new ConflictException("결제 대기 상태가 아닙니다.");
         }
 
         this.status = PaymentStatus.SUCCESS;
-        this.paidAt = LocalDateTime.now();
+        this.paidAt = now;
     }
 
     public void fail() {
@@ -62,12 +67,12 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
     }
 
-    public void cancel() {
+    public void cancel(LocalDateTime now) {
         if (this.status != PaymentStatus.SUCCESS) {
             throw new ConflictException("성공한 결제만 취소할 수 있습니다.");
         }
 
         this.status = PaymentStatus.CANCELLED;
-        this.cancelledAt = LocalDateTime.now();
+        this.cancelledAt = now;
     }
 }

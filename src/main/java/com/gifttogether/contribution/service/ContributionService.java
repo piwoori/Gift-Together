@@ -58,7 +58,8 @@ public class ContributionService {
                 funding,
                 contributor,
                 request.amount(),
-                request.anonymous()
+                request.anonymous(),
+                now
         );
 
         Contribution savedContribution =
@@ -71,16 +72,16 @@ public class ContributionService {
 
         if (request.simulatePaymentFailure()) {
             payment.fail();
-            savedContribution.fail();
+            savedContribution.fail(now);
             paymentRepository.save(payment);
 
             return ContributionCreateResponse.from(savedContribution);
         }
 
-        payment.success();
+        payment.success(now);
         paymentRepository.save(payment);
 
-        savedContribution.complete();
+        savedContribution.complete(now);
 
         return ContributionCreateResponse.from(savedContribution);
     }
@@ -121,9 +122,9 @@ public class ContributionService {
                         )
                 );
 
-        payment.cancel();
+        payment.cancel(now);
         funding.cancelContribution(contribution.getAmount(), now);
-        contribution.cancel();
+        contribution.cancel(now);
     }
 
     @Transactional(readOnly = true)

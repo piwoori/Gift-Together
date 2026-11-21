@@ -2,6 +2,7 @@ package com.gifttogether.contribution.domain;
 
 import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.funding.domain.Funding;
+import com.gifttogether.funding.domain.FundingTime;
 import com.gifttogether.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -50,21 +51,29 @@ public class Contribution {
             Long amount,
             boolean anonymous
     ) {
+        this(funding, contributor, amount, anonymous, FundingTime.now());
+    }
+
+    public Contribution(Funding funding, User contributor, Long amount, boolean anonymous, LocalDateTime now) {
         this.funding = funding;
         this.contributor = contributor;
         this.amount = amount;
         this.anonymous = anonymous;
         this.status = ContributionStatus.PENDING;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     public void complete() {
-        this.status = ContributionStatus.COMPLETED;
-        this.updatedAt = LocalDateTime.now();
+        complete(FundingTime.now());
     }
 
-    public void fail() {
+    public void complete(LocalDateTime now) {
+        this.status = ContributionStatus.COMPLETED;
+        this.updatedAt = now;
+    }
+
+    public void fail(LocalDateTime now) {
         if (this.status != ContributionStatus.PENDING) {
             throw new ConflictException(
                     "대기 중인 참여만 실패 처리할 수 있습니다."
@@ -72,23 +81,28 @@ public class Contribution {
         }
 
         this.status = ContributionStatus.FAILED;
+        this.updatedAt = now;
     }
 
     public void cancel() {
+        cancel(FundingTime.now());
+    }
+
+    public void cancel(LocalDateTime now) {
         if (this.status != ContributionStatus.COMPLETED) {
             throw new ConflictException("완료된 참여만 취소할 수 있습니다.");
         }
 
         this.status = ContributionStatus.CANCELLED;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = now;
     }
 
-    public void refund() {
+    public void refund(LocalDateTime now) {
         if (this.status != ContributionStatus.COMPLETED) {
             throw new ConflictException("완료된 참여만 환불할 수 있습니다.");
         }
 
         this.status = ContributionStatus.REFUNDED;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = now;
     }
 }

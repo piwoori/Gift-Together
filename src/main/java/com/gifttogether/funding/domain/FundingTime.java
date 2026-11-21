@@ -11,7 +11,11 @@ public final class FundingTime {
     private FundingTime() {
     }
 
-    // Existing API and database timestamps store Seoul wall time without an offset.
+    // Funding deadlines and new funding, contribution and payment records use Seoul wall time.
+    public static LocalDateTime now() {
+        return now(Clock.systemUTC());
+    }
+
     public static LocalDateTime now(Clock clock) {
         return LocalDateTime.ofInstant(clock.instant(), SEOUL);
     }

@@ -9,7 +9,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,7 +18,7 @@ import java.time.LocalDateTime;
 public class Funding {
 
     public void contribute(Long amount) {
-        contribute(amount, FundingTime.now(Clock.systemUTC()));
+        contribute(amount, FundingTime.now());
     }
 
     public void contribute(Long amount, LocalDateTime now) {
@@ -91,6 +90,10 @@ public class Funding {
             LocalDateTime expiredAt,
             String message
     ) {
+        this(receiver, product, expiredAt, message, FundingTime.now());
+    }
+
+    public Funding(User receiver, Product product, LocalDateTime expiredAt, String message, LocalDateTime now) {
         this.receiver = receiver;
         this.product = product;
         this.targetAmount = product.getPrice();
@@ -98,7 +101,7 @@ public class Funding {
         this.status = FundingStatus.OPEN;
         this.message = message;
         this.expiredAt = expiredAt;
-        this.createdAt = FundingTime.now(Clock.systemUTC());
+        this.createdAt = now;
         this.updatedAt = this.createdAt;
     }
 
@@ -122,7 +125,7 @@ public class Funding {
     }
 
     public void cancel() {
-        cancel(FundingTime.now(Clock.systemUTC()));
+        cancel(FundingTime.now());
     }
 
     public void cancel(LocalDateTime now) {

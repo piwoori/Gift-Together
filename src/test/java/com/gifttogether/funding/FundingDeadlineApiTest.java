@@ -1,5 +1,6 @@
 package com.gifttogether.funding;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gifttogether.auth.jwt.JwtTokenProvider;
 import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.contribution.domain.ContributionStatus;
@@ -63,6 +64,8 @@ class FundingDeadlineApiTest {
     FundingExpirationScheduler scheduler;
 
     @Autowired
+    ObjectMapper json;
+    @Autowired
     MockMvc mockMvc;
     @Autowired
     JwtTokenProvider jwtTokenProvider;
@@ -114,11 +117,36 @@ class FundingDeadlineApiTest {
 
         if (secondsFromDeadline < 0) {
             result.andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.expiredAt").value("2026-12-01T18:00:00"));
+                    .andExpect(jsonPath("$.expiredAt").value("2026-12-01T18:00:00"))
+                    .andExpect(resultValue -> {
+                        long id = json.readTree(resultValue.getResponse().getContentAsString())
+                                .get("fundingId").longValue();
+                        Funding created = fundings.findById(id).orElseThrow();
+                        assertThat(created.getCreatedAt()).isEqualTo(DEADLINE_SEOUL.minusSeconds(1));
+                        assertThat(created.getUpdatedAt()).isEqualTo(created.getCreatedAt());
+                    });
         } else {
             result.andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Z", "+09:00", "-05:00", "+00:00", "[Asia/Seoul]"})
+    void rejectsDeadlinesWithTimezoneInformation(String suffix) throws Exception {
+        setCurrentTime(-1);
+        wishlist.save(new WishlistItem(receiver, product));
+        long fundingCount = fundings.count();
+        perform(post("/api/fundings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"productId":%d,"expiredAt":"2026-12-01T18:00:00%s"}
+                        """.formatted(product.getId(), suffix)), receiver)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value(
+                        "마감일(expiredAt)은 시간대 오프셋이 없는 ISO 8601 한국 시간이어야 합니다."));
+        assertThat(fundings.count()).isEqualTo(fundingCount);
     }
 
     @ParameterizedTest
@@ -131,6 +159,15 @@ class FundingDeadlineApiTest {
 
         if (secondsFromDeadline < 0) {
             result.andExpect(status().isCreated());
+            Contribution added = contributions.findAllByFundingId(funding.getId()).stream()
+                    .filter(item -> !item.getId().equals(contribution.getId()))
+                    .findFirst().orElseThrow();
+            LocalDateTime recordedAt = DEADLINE_SEOUL.minusSeconds(1);
+            assertThat(loadFunding().getUpdatedAt()).isEqualTo(recordedAt);
+            assertThat(added.getCreatedAt()).isEqualTo(recordedAt);
+            assertThat(added.getUpdatedAt()).isEqualTo(recordedAt);
+            assertThat(payments.findByContributionId(added.getId()).orElseThrow().getPaidAt())
+                    .isEqualTo(recordedAt);
         } else {
             expectDeadlineConflict(result);
         }
@@ -180,10 +217,20 @@ class FundingDeadlineApiTest {
         Funding stored = loadFunding();
         assertThat(stored.getStatus()).isEqualTo(beforeDeadline ? cancelledFunding : FundingStatus.OPEN);
         assertThat(stored.getCurrentAmount()).isEqualTo(beforeDeadline ? 0L : 1_000L);
-        assertThat(contributions.findById(contribution.getId()).orElseThrow().getStatus())
+        Contribution storedContribution = contributions.findById(contribution.getId()).orElseThrow();
+        Payment storedPayment = payments.findByContributionId(contribution.getId()).orElseThrow();
+        assertThat(storedContribution.getStatus())
                 .isEqualTo(beforeDeadline ? cancelledContribution : ContributionStatus.COMPLETED);
-        assertThat(payments.findByContributionId(contribution.getId()).orElseThrow().getStatus())
+        assertThat(storedPayment.getStatus())
                 .isEqualTo(beforeDeadline ? PaymentStatus.CANCELLED : PaymentStatus.SUCCESS);
+        if (beforeDeadline) {
+            LocalDateTime recordedAt = DEADLINE_SEOUL.minusSeconds(1);
+            assertThat(stored.getUpdatedAt()).isEqualTo(recordedAt);
+            assertThat(storedContribution.getUpdatedAt()).isEqualTo(recordedAt);
+            assertThat(storedPayment.getCancelledAt()).isEqualTo(recordedAt);
+        } else {
+            assertThat(storedPayment.getCancelledAt()).isNull();
+        }
     }
 
     private void setCurrentTime(long secondsFromDeadline) {
