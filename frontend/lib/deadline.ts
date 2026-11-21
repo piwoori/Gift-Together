@@ -25,3 +25,16 @@ export function isFundingBeforeDeadline(
 
     return Number.isFinite(deadline) && now < deadline;
 }
+
+const seoulDeadlineFormatter = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    dateStyle: "medium",
+    timeStyle: "medium",
+});
+
+export function formatFundingDeadline(expiredAt: string): string {
+    const deadline = getDeadlineTime(expiredAt);
+    return Number.isFinite(deadline)
+        ? seoulDeadlineFormatter.format(deadline)
+        : "마감일 확인 불가";
+}

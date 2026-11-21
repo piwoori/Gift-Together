@@ -1,6 +1,6 @@
 package com.gifttogether.funding.dto;
 
-import jakarta.validation.constraints.Future;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
@@ -11,7 +11,7 @@ public record FundingCreateRequest(
         Long productId,
 
         @NotNull
-        @Future
+        @JsonDeserialize(using = FundingDeadlineDeserializer.class)
         LocalDateTime expiredAt,
 
         String message

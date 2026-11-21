@@ -1,6 +1,7 @@
 package com.gifttogether.funding.service;
 
 import java.util.List;
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 import com.gifttogether.contribution.domain.ContributionStatus;
@@ -8,6 +9,7 @@ import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.BadRequestException;
 import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.funding.domain.Funding;
+import com.gifttogether.funding.domain.FundingTime;
 import com.gifttogether.funding.dto.FundingCreateRequest;
 import com.gifttogether.funding.dto.FundingCreateResponse;
 import com.gifttogether.funding.dto.FundingListResponse;
@@ -37,6 +39,7 @@ import com.gifttogether.funding.domain.FundingStatus;
 @RequiredArgsConstructor
 public class FundingService {
 
+    private final Clock clock;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final WishlistItemRepository wishlistItemRepository;
@@ -81,9 +84,9 @@ public class FundingService {
             Long userId,
             FundingCreateRequest request
     ) {
-        // 마감일이 현재보다 미래인지 검증
+        LocalDateTime now = FundingTime.now(clock);
         if (request.expiredAt() == null ||
-                !request.expiredAt().isAfter(LocalDateTime.now())) {
+                !request.expiredAt().isAfter(now)) {
             throw new BadRequestException(
                     "펀딩 마감일은 현재보다 미래여야 합니다."
             );
@@ -106,7 +109,8 @@ public class FundingService {
                 user,
                 product,
                 request.expiredAt(),
-                request.message()
+                request.message(),
+                now
         );
 
         Funding savedFunding = fundingRepository.save(funding);
@@ -124,6 +128,9 @@ public class FundingService {
             throw new ForbiddenException("펀딩 생성자만 취소할 수 있습니다.");
         }
 
+        LocalDateTime now = FundingTime.now(clock);
+        funding.cancel(now);
+
         List<Contribution> contributions =
                 contributionRepository.findAllByFundingIdAndStatus(
                         fundingId,
@@ -136,11 +143,9 @@ public class FundingService {
                     .findByContributionId(contribution.getId())
                     .orElseThrow(FundingNotFoundException::new);
 
-            payment.cancel();
-            contribution.refund();
+            payment.cancel(now);
+            contribution.refund(now);
         }
-
-        funding.cancel();
     }
 
     @Transactional
