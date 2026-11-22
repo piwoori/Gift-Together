@@ -18,10 +18,18 @@ import com.gifttogether.product.domain.Product;
 import com.gifttogether.product.repository.ProductRepository;
 import com.gifttogether.user.domain.User;
 import com.gifttogether.user.repository.UserRepository;
+import com.gifttogether.wallet.domain.Wallet;
+import com.gifttogether.wallet.domain.WalletTransaction;
+import com.gifttogether.wallet.domain.WalletTransactionType;
+import com.gifttogether.wallet.dto.WalletResponse;
+import com.gifttogether.wallet.repository.WalletRepository;
+import com.gifttogether.wallet.repository.WalletTransactionRepository;
+import com.gifttogether.wallet.service.WalletService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,6 +55,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 
@@ -92,6 +101,13 @@ class FundingDeadlinePostgresTest {
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    WalletService walletService;
+    @Autowired
+    WalletRepository wallets;
+    @Autowired
+    WalletTransactionRepository walletTransactions;
+
     private final AtomicReference<Instant> currentTime = new AtomicReference<>();
     private User receiver;
     private User contributor;
@@ -130,13 +146,7 @@ class FundingDeadlinePostgresTest {
                         case CANCEL_FUNDING -> fundingService.cancelFunding(funding.getId(), receiver.getId());
                     }
                 });
-                await().atMost(10, TimeUnit.SECONDS).until(() -> Boolean.TRUE.equals(
-                        jdbc.queryForObject("""
-                                SELECT EXISTS (
-                                    SELECT FROM pg_stat_activity
-                                    WHERE ? = ANY (pg_blocking_pids(pid))
-                                )
-                                """, Boolean.class, holderPid)));
+                awaitBlockedBy(holderPid);
                 currentTime.set(DEADLINE_UTC);
                 return pending;
             });
@@ -185,6 +195,139 @@ class FundingDeadlinePostgresTest {
             jdbc.execute("DROP TRIGGER IF EXISTS reject_test_refund ON payments");
             jdbc.execute("DROP FUNCTION reject_test_refund()");
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void creditsDifferentFundingsConcurrently(boolean existingWallet) throws Exception {
+        long openingBalance = existingWallet ? 5_000L : 0L;
+        if (existingWallet) {
+            createWallet(openingBalance);
+        }
+        addContribution();
+        Funding other = fundings.save(new Funding(receiver, products.save(
+                new Product("다른 상품", 100_000L, null)), DEADLINE_SEOUL, "동시 만료 테스트",
+                DEADLINE_SEOUL.minusMinutes(1)));
+        contributionService.contribute(other.getId(), contributor.getId(),
+                new ContributionCreateRequest(2_000L, false, false));
+
+        runWhileFirstTransactionIsOpen(() -> expire(funding), () -> expire(other));
+
+        Wallet wallet = assertWalletBalance(openingBalance + 3_000L);
+        assertThat(walletTransactions.findAllByWalletIdOrderByCreatedAtDesc(wallet.getId()))
+                .extracting(entry -> entry.getFunding().getId(), WalletTransaction::getAmount,
+                        WalletTransaction::getType)
+                .containsExactlyInAnyOrder(
+                        tuple(funding.getId(), 1_000L, WalletTransactionType.FUNDING_EXPIRED_REWARD),
+                        tuple(other.getId(), 2_000L, WalletTransactionType.FUNDING_EXPIRED_REWARD));
+        assertExpired(funding);
+        assertExpired(other);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void walletLookupAndFirstCreditShareTheSameWallet(boolean lookupFirst) throws Exception {
+        addContribution();
+        AtomicReference<WalletResponse> response = new AtomicReference<>();
+        Runnable lookup = () -> response.set(walletService.getWallet(receiver.getId()));
+        Runnable credit = () -> expire(funding);
+
+        runWhileFirstTransactionIsOpen(lookupFirst ? lookup : credit, lookupFirst ? credit : lookup);
+
+        Wallet wallet = assertSingleCredit(1_000L, 1_000L);
+        assertThat(response.get().walletId()).isEqualTo(wallet.getId());
+        assertThat(response.get().userId()).isEqualTo(receiver.getId());
+        assertThat(response.get().balance()).isEqualTo(lookupFirst ? 0L : 1_000L);
+    }
+
+    @Test
+    void creditsTheSameFundingOnlyOnceDuringConcurrentExpiration() throws Exception {
+        addContribution();
+
+        runWhileFirstTransactionIsOpen(() -> expire(funding), () -> expire(funding));
+
+        assertSingleCredit(1_000L, 1_000L);
+    }
+
+    @Test
+    void rollsBackFundingWalletAndLedgerAfterFlushedCreditFails() {
+        createWallet(5_000L);
+        addContribution();
+        IllegalStateException failure = new IllegalStateException("test failure after credit writes");
+
+        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
+            expire(funding);
+            fundings.flush();
+            assertSingleCredit(6_000L, 1_000L);
+            throw failure;
+        })).isSameAs(failure);
+
+        Wallet wallet = assertWalletBalance(5_000L);
+        assertThat(walletTransactions.findAllByWalletIdOrderByCreatedAtDesc(wallet.getId())).isEmpty();
+        assertThat(fundings.findById(funding.getId()).orElseThrow().getStatus())
+                .isEqualTo(FundingStatus.OPEN);
+
+        expire(funding);
+        assertSingleCredit(6_000L, 1_000L);
+    }
+
+    private void runWhileFirstTransactionIsOpen(Runnable first, Runnable second) throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<?> pending = transaction.execute(status -> {
+                first.run();
+                Integer holderPid = jdbc.queryForObject("SELECT pg_backend_pid()", Integer.class);
+                Future<?> request = executor.submit(second);
+                awaitBlockedBy(holderPid);
+                return request;
+            });
+            pending.get(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private void awaitBlockedBy(Integer holderPid) {
+        await().atMost(10, TimeUnit.SECONDS).until(() -> Boolean.TRUE.equals(
+                jdbc.queryForObject("""
+                        SELECT EXISTS (
+                            SELECT FROM pg_stat_activity
+                            WHERE ? = ANY (pg_blocking_pids(pid))
+                        )
+                        """, Boolean.class, holderPid)));
+    }
+
+    private void createWallet(long balance) {
+        Wallet wallet = new Wallet(receiver);
+        wallet.deposit(balance);
+        wallets.save(wallet);
+    }
+
+    private void expire(Funding target) {
+        fundingService.expireFunding(target.getId(), DEADLINE_SEOUL);
+    }
+
+    private Wallet assertWalletBalance(long balance) {
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM wallets WHERE user_id = ?",
+                Long.class, receiver.getId())).isEqualTo(1L);
+        Wallet wallet = wallets.findByUserId(receiver.getId()).orElseThrow();
+        assertThat(wallet.getBalance()).isEqualTo(balance);
+        return wallet;
+    }
+
+    private Wallet assertSingleCredit(long balance, long amount) {
+        Wallet wallet = assertWalletBalance(balance);
+        assertThat(walletTransactions.findAllByWalletIdOrderByCreatedAtDesc(wallet.getId()))
+                .extracting(entry -> entry.getFunding().getId(), WalletTransaction::getAmount,
+                        WalletTransaction::getType)
+                .containsExactly(tuple(funding.getId(), amount, WalletTransactionType.FUNDING_EXPIRED_REWARD));
+        assertExpired(funding);
+        return wallet;
+    }
+
+    private void assertExpired(Funding target) {
+        assertThat(fundings.findById(target.getId()).orElseThrow().getStatus())
+                .isEqualTo(FundingStatus.EXPIRED);
     }
 
     private Contribution addContribution() {

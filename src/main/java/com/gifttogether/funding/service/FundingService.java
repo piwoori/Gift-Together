@@ -29,11 +29,8 @@ import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.FundingNotFoundException;
 import com.gifttogether.payment.domain.Payment;
 import com.gifttogether.payment.repository.PaymentRepository;
-import com.gifttogether.wallet.domain.Wallet;
-import com.gifttogether.wallet.domain.WalletTransaction;
-import com.gifttogether.wallet.repository.WalletRepository;
-import com.gifttogether.wallet.repository.WalletTransactionRepository;
 import com.gifttogether.funding.domain.FundingStatus;
+import com.gifttogether.wallet.service.WalletService;
 
 @Service
 @RequiredArgsConstructor
@@ -46,8 +43,7 @@ public class FundingService {
     private final FundingRepository fundingRepository;
     private final ContributionRepository contributionRepository;
     private final PaymentRepository paymentRepository;
-    private final WalletRepository walletRepository;
-    private final WalletTransactionRepository walletTransactionRepository;
+    private final WalletService walletService;
 
 
     @Transactional(readOnly = true)
@@ -166,19 +162,6 @@ public class FundingService {
             return;
         }
 
-        Wallet wallet = walletRepository
-                .findByUserId(funding.getReceiver().getId())
-                .orElseGet(() ->
-                        walletRepository.save(
-                                new Wallet(funding.getReceiver())
-                        )
-                );
-
-        wallet.deposit(amount);
-
-        WalletTransaction transaction =
-                new WalletTransaction(wallet, funding, amount);
-
-        walletTransactionRepository.save(transaction);
+        walletService.creditExpiredFunding(funding, amount);
     }
 }
