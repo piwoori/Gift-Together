@@ -1,10 +1,14 @@
 package com.gifttogether.contribution.service;
 
+import com.gifttogether.common.exception.BadRequestException;
+import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.common.exception.ForbiddenException;
 import com.gifttogether.contribution.domain.Contribution;
+import com.gifttogether.contribution.domain.ContributionIdempotency;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.dto.ContributionResponse;
+import com.gifttogether.contribution.repository.ContributionIdempotencyRepository;
 import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.ContributionNotFoundException;
 import com.gifttogether.common.exception.FundingNotFoundException;
@@ -13,6 +17,7 @@ import com.gifttogether.funding.domain.Funding;
 import com.gifttogether.funding.repository.FundingRepository;
 import com.gifttogether.user.domain.User;
 import com.gifttogether.user.repository.UserRepository;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,12 +29,17 @@ import com.gifttogether.contribution.dto.MyContributionResponse;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class ContributionService {
 
+    private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("[A-Za-z0-9._~-]{1,128}");
+
     private final Clock clock;
+    private final Validator validator;
+    private final ContributionIdempotencyRepository idempotencyRepository;
     private final FundingRepository fundingRepository;
     private final UserRepository userRepository;
     private final ContributionRepository contributionRepository;
@@ -41,12 +51,58 @@ public class ContributionService {
             Long userId,
             ContributionCreateRequest request
     ) {
+        return contribute(fundingId, userId, request, null);
+    }
+
+    @Transactional
+    public ContributionCreateResponse contribute(
+            Long fundingId,
+            Long userId,
+            ContributionCreateRequest request,
+            String idempotencyKey
+    ) {
+        if (idempotencyKey == null) {
+            validateRequest(request);
+        } else if (!IDEMPOTENCY_KEY.matcher(idempotencyKey).matches()) {
+            throw new BadRequestException("Idempotency-Key는 영문, 숫자 또는 . _ ~ - 문자로 1~128자여야 합니다.");
+        }
+
         Funding funding = fundingRepository.findByIdWithLock(fundingId)
                 .orElseThrow(FundingNotFoundException::new);
 
         User contributor = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
+        if (idempotencyKey != null) {
+            // The funding lock serializes the lookup and insertion for this scope.
+            var previous = idempotencyRepository.findByUserIdAndFundingIdAndIdempotencyKey(
+                    userId, fundingId, idempotencyKey);
+            if (previous.isPresent()) {
+                var stored = previous.get();
+                if (!stored.matches(request)) {
+                    throw new ConflictException("이미 다른 참여 요청에 사용된 Idempotency-Key입니다.");
+                }
+                return stored.response();
+            }
+            validateRequest(request);
+        }
+
+        var response = createContribution(funding, contributor, request);
+        if (idempotencyKey != null) {
+            idempotencyRepository.save(new ContributionIdempotency(idempotencyKey, request, response));
+        }
+        return response;
+    }
+
+    private void validateRequest(ContributionCreateRequest request) {
+        validator.validate(request).stream().findFirst().ifPresent(violation -> {
+            throw new BadRequestException(violation.getMessage());
+        });
+    }
+
+    private ContributionCreateResponse createContribution(
+            Funding funding, User contributor, ContributionCreateRequest request
+    ) {
         LocalDateTime now = FundingTime.now(clock);
         if (request.simulatePaymentFailure()) {
             funding.validateContribution(request.amount(), now);

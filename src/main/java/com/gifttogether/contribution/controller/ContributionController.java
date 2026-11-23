@@ -4,7 +4,6 @@ import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.dto.ContributionResponse;
 import com.gifttogether.contribution.service.ContributionService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,13 +34,15 @@ public class ContributionController {
     public ResponseEntity<ContributionCreateResponse> contribute(
             @PathVariable Long fundingId,
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody ContributionCreateRequest request
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody ContributionCreateRequest request
     ) {
         ContributionCreateResponse response =
                 contributionService.contribute(
                         fundingId,
                         userId,
-                        request
+                        request,
+                        idempotencyKey
                 );
 
         return ResponseEntity

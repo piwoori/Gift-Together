@@ -19,6 +19,7 @@ import com.gifttogether.user.repository.UserRepository;
 import com.gifttogether.wishlist.domain.WishlistItem;
 import com.gifttogether.wishlist.repository.WishlistItemRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -231,6 +232,40 @@ class FundingDeadlineApiTest {
         } else {
             assertThat(storedPayment.getCancelledAt()).isNull();
         }
+    }
+
+    @Test
+    void acceptsOptionalIdempotencyHeaderAndReplaysTheOriginalHttpResponse() throws Exception {
+        setCurrentTime(-1);
+        String first = perform(participationRequest("http-retry", 1_000), contributor)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+        setCurrentTime(0);
+        String replay = perform(participationRequest("http-retry", 1_000), contributor)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+        assertThat(replay).isEqualTo(first);
+        perform(participationRequest("http-retry", 999), contributor)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+        assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(2);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "invalid key", "invalid,key"})
+    void rejectsMalformedIdempotencyHeaders(String key) throws Exception {
+        setCurrentTime(-1);
+        perform(participationRequest(key, 1_000), contributor)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(1);
+    }
+
+    private MockHttpServletRequestBuilder participationRequest(String key, int amount) {
+        return post("/api/fundings/{id}/contributions", funding.getId())
+                .header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"amount\":" + amount + "}");
     }
 
     private void setCurrentTime(long secondsFromDeadline) {

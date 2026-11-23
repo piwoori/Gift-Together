@@ -1,9 +1,11 @@
 package com.gifttogether.funding;
 
+import com.gifttogether.common.exception.BadRequestException;
 import com.gifttogether.common.exception.ConflictException;
 import com.gifttogether.contribution.domain.Contribution;
 import com.gifttogether.contribution.domain.ContributionStatus;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
+import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.contribution.service.ContributionService;
 import com.gifttogether.funding.domain.Funding;
@@ -269,6 +271,99 @@ class FundingDeadlinePostgresTest {
 
         expire(funding);
         assertSingleCredit(6_000L, 1_000L);
+    }
+
+    @Test
+    void replaysLostResponseAfterOtherParticipationAndDeadline() {
+        var original = contribute("first", 1_000L, false, false);
+        contribute("second", 2_000L, false, false);
+        currentTime.set(DEADLINE_UTC);
+
+        assertThat(contribute("first", 1_000L, false, false)).isEqualTo(original);
+        assertThat(original.currentAmount()).isEqualTo(1_000L);
+        assertContributionTotals(2, 2, 3_000L);
+    }
+
+    @Test
+    void serializesConcurrentRequestsWithTheSameKey() throws Exception {
+        AtomicReference<ContributionCreateResponse> first = new AtomicReference<>();
+        AtomicReference<ContributionCreateResponse> second = new AtomicReference<>();
+        runWhileFirstTransactionIsOpen(
+                () -> first.set(contribute("shared", 1_000L, false, false)),
+                () -> second.set(contribute("shared", 1_000L, false, false)));
+
+        assertThat(second.get()).isEqualTo(first.get());
+        assertContributionTotals(1, 1, 1_000L);
+    }
+
+    @Test
+    void replaysCompletedFundingAndRejectsChangesToAnyRequestField() {
+        var original = contribute("final", 100_000L, false, false);
+        assertThat(original.fundingStatus()).isEqualTo(FundingStatus.COMPLETED);
+        assertThat(contribute("final", 100_000L, false, false)).isEqualTo(original);
+        assertThatThrownBy(() -> contribute("final", 99_000L, false, false))
+                .isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> contribute("final", 100_000L, true, false))
+                .isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> contribute("final", 100_000L, false, true))
+                .isInstanceOf(ConflictException.class);
+        assertContributionTotals(1, 1, 100_000L);
+    }
+
+    @Test
+    void replaysMockFailureWithoutAddingToFunding() {
+        var original = contribute("failed", 1_000L, true, true);
+
+        assertThat(contribute("failed", 1_000L, true, true)).isEqualTo(original);
+        assertThat(original.contributionStatus()).isEqualTo(ContributionStatus.FAILED);
+        assertThat(payments.findByContributionId(original.contributionId()).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.FAILED);
+        assertContributionTotals(1, 1, 0L);
+    }
+
+    @Test
+    void leavesKeysAvailableAfterValidationFailureAndRollback() {
+        assertThatThrownBy(() -> contribute("invalid", 100_001L, false, false))
+                .isInstanceOf(BadRequestException.class);
+        IllegalStateException failure = new IllegalStateException("test rollback");
+        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
+            contribute("rolled-back", 1_000L, false, false);
+            fundings.flush();
+            throw failure;
+        })).isSameAs(failure);
+        assertContributionTotals(0, 0, 0L);
+        assertThat(jdbc.queryForObject("select count(*) from contribution_idempotency where funding_id = ?",
+                Long.class, funding.getId())).isZero();
+
+        contribute("invalid", 2_000L, false, false);
+        contribute("rolled-back", 3_000L, false, false);
+        assertContributionTotals(2, 2, 5_000L);
+    }
+
+    @Test
+    void acceptsIntentionalRepeatsWithDistinctKeysAndWithoutAKey() {
+        var first = contribute("first", 1_000L, false, false);
+        var second = contribute("second", 1_000L, false, false);
+        var third = contribute(null, 1_000L, false, false);
+        var fourth = contribute(null, 1_000L, false, false);
+
+        assertThat(List.of(first.contributionId(), second.contributionId(),
+                third.contributionId(), fourth.contributionId())).doesNotHaveDuplicates();
+        assertContributionTotals(4, 4, 4_000L);
+    }
+
+    private ContributionCreateResponse contribute(String key, long amount, boolean anonymous, boolean failure) {
+        return contributionService.contribute(funding.getId(), contributor.getId(),
+                new ContributionCreateRequest(amount, anonymous, failure), key);
+    }
+
+    private void assertContributionTotals(int contributionCount, long paymentCount, long currentAmount) {
+        assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(contributionCount);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM payments p JOIN contributions c ON c.id = p.contribution_id
+                WHERE c.funding_id = ?
+                """, Long.class, funding.getId())).isEqualTo(paymentCount);
+        assertThat(fundings.findById(funding.getId()).orElseThrow().getCurrentAmount()).isEqualTo(currentAmount);
     }
 
     private void runWhileFirstTransactionIsOpen(Runnable first, Runnable second) throws Exception {
