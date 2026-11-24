@@ -204,7 +204,7 @@ function ContributionForm({ fundingId, userId, authReady }: {
             if (result.kind === "unknown" || result.kind === "unauthorized" || result.kind === "conflict") {
                 if (activeAccount) {
                     setError(result.kind === "conflict"
-                        ? `${result.message} 기존 참여 내역을 확인해 주세요.`
+                        ? `${result.message} 참여 결과를 확정할 수 없어 기존 요청을 보관했습니다. 같은 요청으로 다시 확인하거나 펀딩 상세에서 내 참여 내역을 확인해 주세요.`
                         : unknownMessage);
                 }
                 return;

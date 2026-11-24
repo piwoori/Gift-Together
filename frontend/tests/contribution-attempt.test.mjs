@@ -71,11 +71,46 @@ test("distinguishes a confirmed failure, a funding rejection, and a key conflict
     assert.deepEqual(await classify(201, { contributionStatus: "FAILED" }), { kind: "failed" });
     const deadline = { code: "CONFLICT", message: "마감된 펀딩입니다." };
     assert.deepEqual(await classify(409, deadline), { kind: "rejected", message: deadline.message });
+    const closed = { code: "CONFLICT", message: "진행 중인 펀딩이 아닙니다." };
+    assert.deepEqual(await classify(409, closed), { kind: "rejected", message: closed.message });
     const collision = { code: "CONFLICT", message: "이미 다른 참여 요청에 사용된 Idempotency-Key입니다." };
     assert.deepEqual(await classify(409, collision), { kind: "conflict", message: collision.message });
     assert.deepEqual(await classify(400, { code: "BAD_REQUEST", message: "남은 금액 초과" }),
         { kind: "rejected", message: "남은 금액 초과" });
     assert.deepEqual(await classify(401, {}), { kind: "unauthorized" });
+});
+
+test("a changed idempotency conflict message still preserves the original key and body", async () => {
+    const tab = storage();
+    const scope = contributionStorageKey(7, "42");
+    const attempt = prepareContributionAttempt(tab, scope, 3_000, true);
+    const requests = [];
+    const send = async (_path, options) => {
+        requests.push({ headers: options.headers, body: options.body });
+        return Response.json({ code: "CONFLICT", message: "이미 처리된 요청과 내용이 일치하지 않습니다." },
+            { status: 409 });
+    };
+
+    assert.equal((await sendContributionAttempt(send, "42", attempt)).kind, "conflict");
+    const retry = prepareContributionAttempt(tab, scope, 9_000, false);
+    assert.deepEqual(retry, attempt);
+    assert.equal((await sendContributionAttempt(send, "42", retry)).kind, "conflict");
+    assert.deepEqual(requests[1], requests[0]);
+});
+
+test("only explicitly recognized funding conflicts can end a pending attempt", async () => {
+    const attempt = prepareContributionAttempt(storage(), "request", 1_000, false);
+    for (const body of [
+        { code: "CONFLICT", message: "이 펀딩은 이미 마감되었습니다." },
+        { code: "OTHER_CONFLICT", message: "마감된 펀딩입니다." },
+        { message: "마감된 펀딩입니다." },
+        { code: "CONFLICT" },
+    ]) {
+        const result = await sendContributionAttempt(
+            async () => Response.json(body, { status: 409 }), "42", attempt
+        );
+        assert.ok(["unknown", "conflict"].includes(result.kind));
+    }
 });
 
 test("keeps 5xx, malformed responses and timeouts unresolved", async () => {

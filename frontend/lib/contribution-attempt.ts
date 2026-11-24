@@ -63,15 +63,18 @@ export async function sendContributionAttempt(
         if ([400, 404, 409].includes(response.status)) {
             const body = await response.json();
             if (typeof body?.message === "string") {
-                // PR #4 uses CONFLICT for both cases, so use its exact collision message.
-                if (response.status === 409 && body.code === "CONFLICT" &&
-                    body.message === "이미 다른 참여 요청에 사용된 Idempotency-Key입니다.") {
+                if (response.status === 409) {
+                    // Only known funding rejections prove that it is safe to clear the saved attempt.
+                    if (body.code === "CONFLICT" &&
+                        (body.message === "진행 중인 펀딩이 아닙니다." ||
+                            body.message === "마감된 펀딩입니다.")) {
+                        return { kind: "rejected", message: body.message };
+                    }
                     return { kind: "conflict", message: body.message };
                 }
 
                 if ((response.status === 400 && body.code === "BAD_REQUEST") ||
-                    (response.status === 404 && ["FUNDING_NOT_FOUND", "USER_NOT_FOUND"].includes(body.code)) ||
-                    (response.status === 409 && body.code === "CONFLICT")) {
+                    (response.status === 404 && ["FUNDING_NOT_FOUND", "USER_NOT_FOUND"].includes(body.code))) {
                     return { kind: "rejected", message: body.message };
                 }
             }
