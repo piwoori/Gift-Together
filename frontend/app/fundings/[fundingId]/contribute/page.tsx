@@ -4,7 +4,16 @@
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/app/components/AuthProvider";
+import { getCurrentUserId } from "@/lib/auth";
+import {
+    contributionStorageKey,
+    prepareContributionAttempt,
+    readContributionAttempt,
+    sendContributionAttempt,
+    type ContributionAttempt,
+} from "@/lib/contribution-attempt";
 import { isFundingBeforeDeadline } from "@/lib/deadline";
 
 type FundingStatus = "OPEN" | "COMPLETED" | "EXPIRED" | "CANCELLED";
@@ -17,14 +26,61 @@ type FundingInfo = {
 };
 
 export default function ContributePage() {
-    const params = useParams<{ fundingId: string }>();
+    const { fundingId } = useParams<{ fundingId: string }>();
+    const { userId, isReady, refreshAuth } = useAuth();
+
+    useEffect(() => {
+        window.addEventListener("storage", refreshAuth);
+        return () => window.removeEventListener("storage", refreshAuth);
+    }, [refreshAuth]);
+
+    return <ContributionForm key={`${userId}:${fundingId}`}
+                             fundingId={fundingId} userId={userId} authReady={isReady} />;
+}
+
+const unknownMessage = "참여 결과를 아직 확인할 수 없습니다. 같은 요청으로 다시 확인해 주세요.";
+
+function ContributionForm({ fundingId, userId, authReady }: {
+    fundingId: string;
+    userId: number | null;
+    authReady: boolean;
+}) {
     const router = useRouter();
-    const fundingId = params.fundingId;
+    const storageKey = userId === null ? null : contributionStorageKey(userId, fundingId);
 
     const [amount, setAmount] = useState("");
     const [anonymous, setAnonymous] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [attempt, setAttempt] = useState<ContributionAttempt | null>(null);
+    const [storageReady, setStorageReady] = useState(false);
+    const [completed, setCompleted] = useState(false);
+    const [fundingRevision, setFundingRevision] = useState(0);
+    const submitting = useRef(false);
+    const completedRequest = useRef(false);
+    const mounted = useRef(false);
+
+    useEffect(() => {
+        mounted.current = true;
+        const timer = window.setTimeout(() => {
+            try {
+                const saved = storageKey ? readContributionAttempt(sessionStorage, storageKey) : null;
+                if (saved) {
+                    setAttempt(saved);
+                    setAmount(String(saved.amount));
+                    setAnonymous(saved.anonymous);
+                    setError(unknownMessage);
+                }
+                setStorageReady(true);
+            } catch {
+                setError("저장된 참여 요청을 확인할 수 없습니다. 참여 요청을 보내지 않았습니다.");
+            }
+        }, 0);
+        return () => {
+            mounted.current = false;
+            window.clearTimeout(timer);
+        };
+    }, [storageKey]);
 
     const [funding, setFunding] = useState<FundingInfo | null>(null);
     const [fundingLoading, setFundingLoading] = useState(true);
@@ -37,7 +93,6 @@ export default function ContributePage() {
         async function loadFunding() {
             setFundingLoading(true);
             setFunding(null);
-            setError("");
 
             try {
                 const response = await fetch(`/api/fundings/${fundingId}`, {
@@ -55,11 +110,9 @@ export default function ContributePage() {
                 }
             } catch (err) {
                 if (active) {
-                    setError(
-                        err instanceof Error
-                            ? err.message
-                            : "펀딩 정보를 불러오지 못했습니다."
-                    );
+                    setError((previous) => previous || (
+                        err instanceof Error ? err.message : "펀딩 정보를 불러오지 못했습니다."
+                    ));
                 }
             } finally {
                 if (active) {
@@ -73,7 +126,7 @@ export default function ContributePage() {
         return () => {
             active = false;
         };
-    }, [fundingId]);
+    }, [fundingId, fundingRevision]);
 
     // 2. 마감 시간 실시간 감지
     useEffect(() => {
@@ -99,72 +152,89 @@ export default function ContributePage() {
         funding?.status === "OPEN" &&
         !deadlinePassed;
 
+    const ready = authReady && storageReady && !completed;
+    const inputsDisabled = !ready || !canContribute || loading || attempt !== null;
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        if (!ready || submitting.current || completedRequest.current) return;
 
-        if (
-            !canContribute ||
-            !funding ||
-            !isFundingBeforeDeadline(funding.expiredAt, Date.now())
-        ) {
-            setError("현재 참여할 수 없는 펀딩입니다.");
+        const currentUser = getCurrentUserId();
+        if (currentUser !== userId || !storageKey) {
+            if (currentUser === null) {
+                router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+            } else {
+                setError("로그인 정보가 변경되었습니다. 페이지를 새로고침해 주세요.");
+            }
             return;
         }
 
-        const contributionAmount = Number(amount);
-
-        if (
-            !Number.isSafeInteger(contributionAmount) ||
-            contributionAmount < 1000
-        ) {
-            setError("최소 1,000원 이상 입력해 주세요.");
-            return;
-        }
-
-        if (contributionAmount > funding.remainingAmount) {
-            setError(
-                `남은 금액 ${funding.remainingAmount.toLocaleString()}원을 초과할 수 없습니다.`
-            );
-            return;
-        }
-
-        setLoading(true);
-        setError("");
-
+        submitting.current = true;
         try {
-            const response = await apiFetch(
-                `/api/fundings/${fundingId}/contributions`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        amount: contributionAmount,
-                        anonymous,
-                        simulatePaymentFailure: false,
-                    }),
+            const saved = readContributionAttempt(sessionStorage, storageKey);
+            const contributionAmount = Number(amount);
+            if (!saved) {
+                if (!canContribute || !funding ||
+                    !isFundingBeforeDeadline(funding.expiredAt, Date.now())) {
+                    setError("현재 참여할 수 없는 펀딩입니다.");
+                    return;
                 }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-
-                throw new Error(
-                    errorData?.message ||
-                    "펀딩 참여에 실패했습니다. 마감 여부와 남은 금액을 확인해 주세요."
-                );
+                if (!Number.isSafeInteger(contributionAmount) || contributionAmount < 1000) {
+                    setError("최소 1,000원 이상 입력해 주세요.");
+                    return;
+                }
+                if (contributionAmount > funding.remainingAmount) {
+                    setError(`남은 금액 ${funding.remainingAmount.toLocaleString()}원을 초과할 수 없습니다.`);
+                    return;
+                }
             }
 
-            router.push(`/fundings/${fundingId}`);
-            router.refresh();
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "참여 처리 중 문제가 발생했습니다."
+            const pending = saved ?? prepareContributionAttempt(
+                sessionStorage, storageKey, contributionAmount, anonymous
             );
+            setAttempt(pending);
+            setAmount(String(pending.amount));
+            setAnonymous(pending.anonymous);
+            setLoading(true);
+            setError("");
+
+            const result = await sendContributionAttempt(apiFetch, fundingId, pending);
+            const activeAccount = mounted.current && getCurrentUserId() === userId;
+
+            if (result.kind === "unknown" || result.kind === "unauthorized" || result.kind === "conflict") {
+                if (activeAccount) {
+                    setError(result.kind === "conflict"
+                        ? `${result.message} 참여 결과를 확정할 수 없어 기존 요청을 보관했습니다. 같은 요청으로 다시 확인하거나 펀딩 상세에서 내 참여 내역을 확인해 주세요.`
+                        : unknownMessage);
+                }
+                return;
+            }
+
+            // Only clear the attempt that produced this result.
+            if (readContributionAttempt(sessionStorage, storageKey)?.key === pending.key) {
+                sessionStorage.removeItem(storageKey);
+            }
+            if (!activeAccount) return;
+            setAttempt(null);
+
+            if (result.kind === "completed") {
+                completedRequest.current = true;
+                setCompleted(true);
+                router.push(`/fundings/${fundingId}`);
+                router.refresh();
+                return;
+            }
+            if (result.kind === "rejected") {
+                setError(result.message);
+            } else {
+                setError("모의 결제에 실패했습니다. 다시 참여할 수 있습니다.");
+            }
+            setFundingLoading(true);
+            setFundingRevision((revision) => revision + 1);
+        } catch {
+            setError("참여 요청을 저장하거나 정리할 수 없습니다. 브라우저 저장소를 확인해 주세요.");
         } finally {
+            submitting.current = false;
             setLoading(false);
         }
     }
@@ -242,7 +312,7 @@ export default function ContributePage() {
                                 min="1000"
                                 step="1"
                                 required
-                                disabled={!canContribute || loading}
+                                disabled={inputsDisabled}
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 placeholder="금액을 입력해 주세요"
@@ -258,7 +328,7 @@ export default function ContributePage() {
                                 <button
                                     key={value}
                                     type="button"
-                                    disabled={!canContribute || loading}
+                                    disabled={inputsDisabled}
                                     onClick={() =>
                                         setAmount((prev) =>
                                             String((Number(prev) || 0) + value)
@@ -286,7 +356,7 @@ export default function ContributePage() {
                         <input
                             type="checkbox"
                             checked={anonymous}
-                            disabled={!canContribute || loading}
+                            disabled={inputsDisabled}
                             onChange={(e) => setAnonymous(e.target.checked)}
                             className="h-4 w-4 accent-[#328c82]"
                         />
@@ -310,14 +380,16 @@ export default function ContributePage() {
 
                     <button
                         type="submit"
-                        disabled={loading || !canContribute}
+                        disabled={!ready || loading || (!attempt && !canContribute)}
                         className="w-full rounded-xl bg-[#606472] py-4 font-semibold text-white transition hover:bg-[#4f5360] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {loading
                             ? "참여 처리 중..."
-                            : fundingLoading
-                                ? "펀딩 확인 중..."
-                                : "선물에 참여하기 🎁"}
+                            : attempt
+                                ? "같은 요청으로 결과 확인"
+                                : fundingLoading
+                                    ? "펀딩 확인 중..."
+                                    : "선물에 참여하기 🎁"}
                     </button>
 
                     {!canContribute && !fundingLoading && (
