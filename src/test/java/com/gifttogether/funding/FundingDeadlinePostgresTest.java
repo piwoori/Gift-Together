@@ -352,6 +352,35 @@ class FundingDeadlinePostgresTest {
         assertContributionTotals(4, 4, 4_000L);
     }
 
+    @Test
+    void rechecksRemainingAmountAfterWaitingForAConcurrentContribution() throws Exception {
+        runWhileFirstTransactionIsOpen(
+                () -> contribute("first", 99_001L, false, false),
+                () -> assertThatThrownBy(() -> contribute("waiting", 1_000L, false, false))
+                        .isInstanceOf(BadRequestException.class)
+                        .hasMessage("남은 금액을 초과할 수 없습니다."));
+
+        assertContributionTotals(1, 1, 99_001L);
+        var finalContribution = contribute("waiting", 999L, false, false);
+        assertThat(finalContribution.fundingStatus()).isEqualTo(FundingStatus.COMPLETED);
+        assertThat(contribute("waiting", 999L, false, false)).isEqualTo(finalContribution);
+        assertContributionTotals(2, 2, 100_000L);
+    }
+
+    @Test
+    void failedFinalContributionBelowMinimumKeepsTheRemainder() {
+        contribute("first", 99_500L, false, false);
+        var failure = contribute("failed-final", 500L, false, true);
+
+        assertThat(failure.contributionStatus()).isEqualTo(ContributionStatus.FAILED);
+        assertThat(failure.fundingStatus()).isEqualTo(FundingStatus.OPEN);
+        assertThat(failure.remainingAmount()).isEqualTo(500L);
+        assertThat(payments.findByContributionId(failure.contributionId()).orElseThrow().getStatus())
+                .isEqualTo(PaymentStatus.FAILED);
+        assertThat(contribute("failed-final", 500L, false, true)).isEqualTo(failure);
+        assertContributionTotals(2, 2, 99_500L);
+    }
+
     private ContributionCreateResponse contribute(String key, long amount, boolean anonymous, boolean failure) {
         return contributionService.contribute(funding.getId(), contributor.getId(),
                 new ContributionCreateRequest(amount, anonymous, failure), key);
