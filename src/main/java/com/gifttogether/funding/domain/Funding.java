@@ -36,17 +36,18 @@ public class Funding {
     public void validateContribution(Long amount, LocalDateTime now) {
         requireOpenBeforeDeadline(now, "진행 중인 펀딩이 아닙니다.");
 
-        if (amount < 1000) {
-            throw new BadRequestException("최소 참여 금액은 1,000원입니다.");
+        if (amount == null || amount <= 0) {
+            throw new BadRequestException("참여 금액은 0원보다 커야 합니다.");
         }
 
-        long remainingAmount =
-                this.targetAmount - this.currentAmount;
-
+        long remainingAmount = this.targetAmount - this.currentAmount;
         if (amount > remainingAmount) {
-            throw new BadRequestException(
-                    "남은 금액을 초과할 수 없습니다."
-            );
+            throw new BadRequestException("남은 금액을 초과할 수 없습니다.");
+        }
+        if (amount < Math.min(1000L, remainingAmount)) {
+            throw new BadRequestException(remainingAmount < 1000
+                    ? "남은 금액 전액을 입력해 주세요."
+                    : "최소 참여 금액은 1,000원입니다.");
         }
     }
 

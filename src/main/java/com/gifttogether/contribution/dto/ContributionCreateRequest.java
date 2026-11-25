@@ -1,11 +1,13 @@
 package com.gifttogether.contribution.dto;
 
-import jakarta.validation.constraints.Min;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotNull;
 
 public record ContributionCreateRequest(
         @NotNull
-        @Min(1000)
+        @Positive
+        @JsonDeserialize(using = ContributionAmountDeserializer.class)
         Long amount,
 
         boolean anonymous,

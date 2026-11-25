@@ -261,6 +261,18 @@ class FundingDeadlineApiTest {
         assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(1);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"999.5", "1000.0"})
+    void rejectsNonIntegerJsonAmountWithoutRounding(String amount) throws Exception {
+        setCurrentTime(-1);
+        perform(post("/api/fundings/{id}/contributions", funding.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.format("{\"amount\":%s}", amount)), contributor)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(1);
+    }
+
     private MockHttpServletRequestBuilder participationRequest(String key, int amount) {
         return post("/api/fundings/{id}/contributions", funding.getId())
                 .header("Idempotency-Key", key)

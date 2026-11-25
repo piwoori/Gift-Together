@@ -127,3 +127,19 @@ test("keeps 5xx, malformed responses and timeouts unresolved", async () => {
         throw new DOMException("Timed out", "TimeoutError");
     }, "42", attempt)).kind, "unknown");
 });
+
+test("recovers and sends a final contribution below 1,000 won with the original amount and key", async () => {
+    const tab = storage();
+    const scope = contributionStorageKey(7, "42");
+    const attempt = prepareContributionAttempt(tab, scope, 1, true);
+    assert.deepEqual(readContributionAttempt(tab, scope), attempt);
+    const retry = prepareContributionAttempt(tab, scope, 999, false);
+    const result = await sendContributionAttempt(async (_path, options) => {
+        assert.equal(options.headers["Idempotency-Key"], attempt.key);
+        assert.deepEqual(JSON.parse(options.body), {
+            amount: 1, anonymous: true, simulatePaymentFailure: false,
+        });
+        return Response.json({ contributionStatus: "COMPLETED" }, { status: 201 });
+    }, "42", retry);
+    assert.equal(result.kind, "completed");
+});

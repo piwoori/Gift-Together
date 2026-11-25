@@ -16,7 +16,7 @@ export function readContributionAttempt(storage: Storage, storageKey: string): C
     const attempt = JSON.parse(saved);
     if (!attempt || typeof attempt.key !== "string" ||
         !/^[A-Za-z0-9._~-]{1,128}$/.test(attempt.key) ||
-        !Number.isSafeInteger(attempt.amount) || attempt.amount < 1000 ||
+        !Number.isSafeInteger(attempt.amount) || attempt.amount <= 0 ||
         typeof attempt.anonymous !== "boolean" ||
         typeof attempt.simulatePaymentFailure !== "boolean") {
         throw new Error("저장된 참여 요청을 확인할 수 없습니다.");

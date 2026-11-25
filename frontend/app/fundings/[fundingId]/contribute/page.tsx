@@ -147,9 +147,13 @@ function ContributionForm({ fundingId, userId, authReady }: {
         return () => window.clearInterval(interval);
     }, [funding]);
 
+    const remainingAmount = funding?.remainingAmount ?? 0;
+    const isFinalContribution = remainingAmount > 0 && remainingAmount < 1000;
+    const minimumAmount = isFinalContribution ? remainingAmount : 1000;
     const canContribute =
         !fundingLoading &&
         funding?.status === "OPEN" &&
+        remainingAmount > 0 &&
         !deadlinePassed;
 
     const ready = authReady && storageReady && !completed;
@@ -179,8 +183,10 @@ function ContributionForm({ fundingId, userId, authReady }: {
                     setError("현재 참여할 수 없는 펀딩입니다.");
                     return;
                 }
-                if (!Number.isSafeInteger(contributionAmount) || contributionAmount < 1000) {
-                    setError("최소 1,000원 이상 입력해 주세요.");
+                if (!Number.isSafeInteger(contributionAmount) || contributionAmount < minimumAmount) {
+                    setError(isFinalContribution
+                        ? `남은 금액 ${remainingAmount.toLocaleString()}원을 정확히 입력해 주세요.`
+                        : "최소 1,000원 이상 정수로 입력해 주세요.");
                     return;
                 }
                 if (contributionAmount > funding.remainingAmount) {
@@ -309,7 +315,8 @@ function ContributionForm({ fundingId, userId, authReady }: {
                             <input
                                 id="amount"
                                 type="number"
-                                min="1000"
+                                min={minimumAmount}
+                                max={funding?.remainingAmount}
                                 step="1"
                                 required
                                 disabled={inputsDisabled}
@@ -328,7 +335,8 @@ function ContributionForm({ fundingId, userId, authReady }: {
                                 <button
                                     key={value}
                                     type="button"
-                                    disabled={inputsDisabled}
+                                    disabled={inputsDisabled || isFinalContribution ||
+                                        (Number(amount) || 0) + value > remainingAmount}
                                     onClick={() =>
                                         setAmount((prev) =>
                                             String((Number(prev) || 0) + value)
@@ -342,8 +350,10 @@ function ContributionForm({ fundingId, userId, authReady }: {
                         </div>
 
                         <p className="mt-3 text-xs text-gray-500">
-                            최소 참여 금액은 1,000원입니다.
-                            {funding && funding.status === "OPEN" && (
+                            {isFinalContribution
+                                ? `남은 금액 ${remainingAmount.toLocaleString()}원만 참여할 수 있습니다.`
+                                : "최소 참여 금액은 1,000원입니다."}
+                            {!isFinalContribution && funding && funding.status === "OPEN" && (
                                 <>
                                     {" "}남은 금액은{" "}
                                     {funding.remainingAmount.toLocaleString()}원입니다.
