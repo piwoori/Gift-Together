@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(
-                        "CONFLICT",
+                        e.getCode(),
                         e.getMessage()
                 ));
     }

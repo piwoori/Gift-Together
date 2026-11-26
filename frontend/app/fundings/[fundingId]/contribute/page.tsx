@@ -8,10 +8,13 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/components/AuthProvider";
 import { getCurrentUserId } from "@/lib/auth";
 import {
+    clearResolvedContributionAttempt,
     contributionStorageKey,
+    lookupContributionAttempt,
     prepareContributionAttempt,
     readContributionAttempt,
     sendContributionAttempt,
+    tryStartContributionAction,
     type ContributionAttempt,
 } from "@/lib/contribution-attempt";
 import { isFundingBeforeDeadline } from "@/lib/deadline";
@@ -159,9 +162,8 @@ function ContributionForm({ fundingId, userId, authReady }: {
     const ready = authReady && storageReady && !completed;
     const inputsDisabled = !ready || !canContribute || loading || attempt !== null;
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-        if (!ready || submitting.current || completedRequest.current) return;
+    async function processAttempt(action: "submit" | "lookup") {
+        if (!ready || completedRequest.current) return;
 
         const currentUser = getCurrentUserId();
         if (currentUser !== userId || !storageKey) {
@@ -173,9 +175,10 @@ function ContributionForm({ fundingId, userId, authReady }: {
             return;
         }
 
-        submitting.current = true;
+        if (!tryStartContributionAction(submitting)) return;
         try {
             const saved = readContributionAttempt(sessionStorage, storageKey);
+            if (action === "lookup" && !saved) return;
             const contributionAmount = Number(amount);
             if (!saved) {
                 if (!canContribute || !funding ||
@@ -204,22 +207,24 @@ function ContributionForm({ fundingId, userId, authReady }: {
             setLoading(true);
             setError("");
 
-            const result = await sendContributionAttempt(apiFetch, fundingId, pending);
+            const result = await (action === "lookup" ? lookupContributionAttempt : sendContributionAttempt)(
+                apiFetch, fundingId, pending
+            );
             const activeAccount = mounted.current && getCurrentUserId() === userId;
 
-            if (result.kind === "unknown" || result.kind === "unauthorized" || result.kind === "conflict") {
+            if (!clearResolvedContributionAttempt(sessionStorage, storageKey, pending, result)) {
                 if (activeAccount) {
-                    setError(result.kind === "conflict"
-                        ? `${result.message} 참여 결과를 확정할 수 없어 기존 요청을 보관했습니다. 같은 요청으로 다시 확인하거나 펀딩 상세에서 내 참여 내역을 확인해 주세요.`
-                        : unknownMessage);
+                    if (result.kind === "conflict" || result.kind === "mismatch") {
+                        setError("저장된 요청과 서버의 요청 정보가 일치하지 않습니다. 기존 요청을 보관했습니다. 펀딩 상세에서 내 참여 내역을 확인해 주세요.");
+                    } else if (result.kind === "not-found") {
+                        setError("아직 확인할 수 있는 참여 결과가 없습니다. 같은 요청을 다시 보내거나 잠시 후 결과를 조회해 주세요.");
+                    } else {
+                        setError(unknownMessage);
+                    }
                 }
                 return;
             }
 
-            // Only clear the attempt that produced this result.
-            if (readContributionAttempt(sessionStorage, storageKey)?.key === pending.key) {
-                sessionStorage.removeItem(storageKey);
-            }
             if (!activeAccount) return;
             setAttempt(null);
 
@@ -273,7 +278,10 @@ function ContributionForm({ fundingId, userId, authReady }: {
                 </header>
 
                 <form
-                    onSubmit={handleSubmit}
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        void processAttempt("submit");
+                    }}
                     className="space-y-7 px-6 py-8"
                 >
                     <div className="rounded-2xl bg-[#e9f7f4] p-5">
@@ -396,11 +404,22 @@ function ContributionForm({ fundingId, userId, authReady }: {
                         {loading
                             ? "참여 처리 중..."
                             : attempt
-                                ? "같은 요청으로 결과 확인"
+                                ? "같은 요청 다시 보내기"
                                 : fundingLoading
                                     ? "펀딩 확인 중..."
                                     : "선물에 참여하기 🎁"}
                     </button>
+
+                    {attempt && (
+                        <button
+                            type="button"
+                            disabled={!ready || loading}
+                            onClick={() => void processAttempt("lookup")}
+                            className="w-full rounded-xl border border-gray-200 py-3 font-medium text-gray-700 disabled:opacity-50"
+                        >
+                            처리 결과 조회
+                        </button>
+                    )}
 
                     {!canContribute && !fundingLoading && (
                         <Link
