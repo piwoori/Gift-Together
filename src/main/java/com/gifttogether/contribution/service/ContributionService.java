@@ -8,6 +8,7 @@ import com.gifttogether.contribution.domain.ContributionIdempotency;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.dto.ContributionResponse;
+import com.gifttogether.contribution.dto.ContributionAttemptResponse;
 import com.gifttogether.contribution.repository.ContributionIdempotencyRepository;
 import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.common.exception.ContributionNotFoundException;
@@ -29,6 +30,7 @@ import com.gifttogether.contribution.dto.MyContributionResponse;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
@@ -63,8 +65,8 @@ public class ContributionService {
     ) {
         if (idempotencyKey == null) {
             validateRequest(request);
-        } else if (!IDEMPOTENCY_KEY.matcher(idempotencyKey).matches()) {
-            throw new BadRequestException("Idempotency-Key는 영문, 숫자 또는 . _ ~ - 문자로 1~128자여야 합니다.");
+        } else {
+            validateIdempotencyKey(idempotencyKey);
         }
 
         Funding funding = fundingRepository.findByIdWithLock(fundingId)
@@ -80,7 +82,8 @@ public class ContributionService {
             if (previous.isPresent()) {
                 var stored = previous.get();
                 if (!stored.matches(request)) {
-                    throw new ConflictException("이미 다른 참여 요청에 사용된 Idempotency-Key입니다.");
+                    throw new ConflictException("IDEMPOTENCY_KEY_CONFLICT",
+                            "이미 다른 참여 요청에 사용된 Idempotency-Key입니다.");
                 }
                 return stored.response();
             }
@@ -92,6 +95,19 @@ public class ContributionService {
             idempotencyRepository.save(new ContributionIdempotency(idempotencyKey, request, response));
         }
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ContributionAttemptResponse> findAttempt(Long fundingId, Long userId, String key) {
+        validateIdempotencyKey(key);
+        return idempotencyRepository.findByUserIdAndFundingIdAndIdempotencyKey(userId, fundingId, key)
+                .map(attempt -> new ContributionAttemptResponse(attempt.request(), attempt.response()));
+    }
+
+    private void validateIdempotencyKey(String key) {
+        if (key == null || !IDEMPOTENCY_KEY.matcher(key).matches()) {
+            throw new BadRequestException("Idempotency-Key는 영문, 숫자 또는 . _ ~ - 문자로 1~128자여야 합니다.");
+        }
     }
 
     private void validateRequest(ContributionCreateRequest request) {

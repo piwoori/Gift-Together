@@ -3,6 +3,7 @@ package com.gifttogether.funding;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gifttogether.auth.jwt.JwtTokenProvider;
 import com.gifttogether.contribution.domain.Contribution;
+import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.domain.ContributionStatus;
 import com.gifttogether.contribution.repository.ContributionRepository;
 import com.gifttogether.funding.domain.Funding;
@@ -38,7 +39,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -170,7 +173,7 @@ class FundingDeadlineApiTest {
             assertThat(payments.findByContributionId(added.getId()).orElseThrow().getPaidAt())
                     .isEqualTo(recordedAt);
         } else {
-            expectDeadlineConflict(result);
+            expectDeadlineConflict(result, "FUNDING_DEADLINE_PASSED");
         }
 
         assertThat(loadFunding().getCurrentAmount())
@@ -183,7 +186,7 @@ class FundingDeadlineApiTest {
         setCurrentTime(secondsFromDeadline);
         expectDeadlineConflict(perform(post("/api/fundings/{id}/contributions", funding.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"amount\":2000,\"simulatePaymentFailure\":true}"), contributor));
+                .content("{\"amount\":2000,\"simulatePaymentFailure\":true}"), contributor), "FUNDING_DEADLINE_PASSED");
         assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(1);
         assertThat(loadFunding().getCurrentAmount()).isEqualTo(1_000L);
     }
@@ -212,7 +215,7 @@ class FundingDeadlineApiTest {
         if (beforeDeadline) {
             result.andExpect(status().isNoContent());
         } else {
-            expectDeadlineConflict(result);
+            expectDeadlineConflict(result, "CONFLICT");
         }
 
         Funding stored = loadFunding();
@@ -247,7 +250,7 @@ class FundingDeadlineApiTest {
         assertThat(replay).isEqualTo(first);
         perform(participationRequest("http-retry", 999), contributor)
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFLICT"));
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_CONFLICT"));
         assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(2);
     }
 
@@ -273,6 +276,61 @@ class FundingDeadlineApiTest {
         assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(1);
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void readsOriginalParticipationResultAfterDeadline(boolean failure) throws Exception {
+        setCurrentTime(-1);
+        String original = perform(participationRequest("lookup", 99_000)
+                .content(json.writeValueAsString(new ContributionCreateRequest(
+                        99_000L, true, failure))), contributor)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long paymentCount = payments.count();
+        setCurrentTime(0);
+
+        String response = perform(attemptRequest(funding.getId(), "lookup"), contributor)
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.request.amount").value(99_000))
+                .andExpect(jsonPath("$.request.anonymous").value(true))
+                .andExpect(jsonPath("$.request.simulatePaymentFailure").value(failure))
+                .andExpect(jsonPath("$.result.contributionStatus").value(failure ? "FAILED" : "COMPLETED"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(json.readTree(response).get("result")).isEqualTo(json.readTree(original));
+        assertThat(contributions.findAllByFundingId(funding.getId())).hasSize(2);
+        assertThat(payments.count()).isEqualTo(paymentCount);
+        assertThat(loadFunding().getCurrentAmount()).isEqualTo(failure ? 1_000L : 100_000L);
+    }
+
+    @Test
+    void lookupIsPrivateAndScopesMissingResultsIdentically() throws Exception {
+        setCurrentTime(-1);
+        perform(participationRequest("private", 1_000), contributor).andExpect(status().isCreated());
+        mockMvc.perform(attemptRequest(funding.getId(), "private")).andExpect(status().isUnauthorized());
+
+        String missing = expectMissingAttempt(funding.getId(), "missing", contributor);
+        assertThat(expectMissingAttempt(funding.getId(), "private", receiver)).isEqualTo(missing);
+        Funding other = fundings.save(new Funding(receiver, product, DEADLINE_SEOUL, "다른 펀딩"));
+        assertThat(expectMissingAttempt(other.getId(), "private", contributor)).isEqualTo(missing);
+
+        perform(attemptRequest(funding.getId(), "invalid key"), contributor)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+    }
+
+    private String expectMissingAttempt(Long fundingId, String key, User user) throws Exception {
+        return perform(attemptRequest(fundingId, key), user)
+                .andExpect(status().isNotFound())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.code").value("CONTRIBUTION_ATTEMPT_NOT_FOUND"))
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    private MockHttpServletRequestBuilder attemptRequest(Long fundingId, String key) {
+        return get("/api/fundings/{id}/contributions/idempotency", fundingId)
+                .header("Idempotency-Key", key);
+    }
+
     private MockHttpServletRequestBuilder participationRequest(String key, int amount) {
         return post("/api/fundings/{id}/contributions", funding.getId())
                 .header("Idempotency-Key", key)
@@ -289,9 +347,9 @@ class FundingDeadlineApiTest {
                 "Bearer " + jwtTokenProvider.createAccessToken(user.getId())));
     }
 
-    private void expectDeadlineConflict(ResultActions result) throws Exception {
+    private void expectDeadlineConflict(ResultActions result, String code) throws Exception {
         result.andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFLICT"))
+                .andExpect(jsonPath("$.code").value(code))
                 .andExpect(jsonPath("$.message").value("마감된 펀딩입니다."));
     }
 

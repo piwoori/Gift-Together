@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -379,6 +380,32 @@ class FundingDeadlinePostgresTest {
                 .isEqualTo(PaymentStatus.FAILED);
         assertThat(contribute("failed-final", 500L, false, true)).isEqualTo(failure);
         assertContributionTotals(2, 2, 99_500L);
+    }
+
+    @Test
+    void lookupWhileParticipationIsUncommittedDoesNotWaitOrChangeData() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            long walletCount = wallets.count();
+            long walletTransactionCount = walletTransactions.count();
+            var original = transaction.execute(status -> {
+                var created = contribute("lookup-race", 1_000L, false, false);
+                Future<?> lookup = executor.submit(() -> assertThat(contributionService.findAttempt(
+                        funding.getId(), contributor.getId(), "lookup-race")).isEmpty());
+                assertThatCode(() -> lookup.get(10, TimeUnit.SECONDS)).doesNotThrowAnyException();
+                return created;
+            });
+
+            var stored = contributionService.findAttempt(funding.getId(), contributor.getId(), "lookup-race")
+                    .orElseThrow();
+            assertThat(stored.result()).isEqualTo(original);
+            assertThat(wallets.count()).isEqualTo(walletCount);
+            assertThat(walletTransactions.count()).isEqualTo(walletTransactionCount);
+            assertContributionTotals(1, 1, 1_000L);
+            assertThat(fundings.findById(funding.getId()).orElseThrow().getStatus()).isEqualTo(FundingStatus.OPEN);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     private ContributionCreateResponse contribute(String key, long amount, boolean anonymous, boolean failure) {
