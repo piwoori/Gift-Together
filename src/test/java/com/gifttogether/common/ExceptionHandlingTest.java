@@ -196,6 +196,6 @@ class ExceptionHandlingTest {
                                     """)
                 )
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFLICT"));
+                .andExpect(jsonPath("$.code").value("FUNDING_NOT_OPEN"));
     }
 }

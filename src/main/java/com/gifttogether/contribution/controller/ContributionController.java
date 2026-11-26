@@ -1,10 +1,12 @@
 package com.gifttogether.contribution.controller;
 
+import com.gifttogether.common.exception.ErrorResponse;
 import com.gifttogether.contribution.dto.ContributionCreateRequest;
 import com.gifttogether.contribution.dto.ContributionCreateResponse;
 import com.gifttogether.contribution.dto.ContributionResponse;
 import com.gifttogether.contribution.service.ContributionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -48,6 +50,22 @@ public class ContributionController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @Operation(summary = "내 참여 요청의 최초 처리 결과 조회")
+    @GetMapping("/idempotency")
+    public ResponseEntity<?> getAttempt(
+            @PathVariable Long fundingId,
+            @AuthenticationPrincipal Long userId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+    ) {
+        var attempt = contributionService.findAttempt(fundingId, userId, idempotencyKey);
+        if (attempt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .cacheControl(CacheControl.noStore())
+                    .body(new ErrorResponse("CONTRIBUTION_ATTEMPT_NOT_FOUND", "저장된 참여 결과가 없습니다."));
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(attempt.get());
     }
 
     @Operation(

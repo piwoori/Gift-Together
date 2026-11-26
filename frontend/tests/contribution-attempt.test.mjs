@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+    clearResolvedContributionAttempt,
     contributionStorageKey,
+    lookupContributionAttempt,
     prepareContributionAttempt,
     readContributionAttempt,
     sendContributionAttempt,
+    tryStartContributionAction,
 } from "../lib/contribution-attempt.ts";
 
 function storage() {
@@ -69,11 +72,11 @@ test("distinguishes a confirmed failure, a funding rejection, and a key conflict
     }
 
     assert.deepEqual(await classify(201, { contributionStatus: "FAILED" }), { kind: "failed" });
-    const deadline = { code: "CONFLICT", message: "마감된 펀딩입니다." };
+    const deadline = { code: "FUNDING_DEADLINE_PASSED", message: "Deadline copy changed." };
     assert.deepEqual(await classify(409, deadline), { kind: "rejected", message: deadline.message });
-    const closed = { code: "CONFLICT", message: "진행 중인 펀딩이 아닙니다." };
+    const closed = { code: "FUNDING_NOT_OPEN", message: "Closed copy changed." };
     assert.deepEqual(await classify(409, closed), { kind: "rejected", message: closed.message });
-    const collision = { code: "CONFLICT", message: "이미 다른 참여 요청에 사용된 Idempotency-Key입니다." };
+    const collision = { code: "IDEMPOTENCY_KEY_CONFLICT", message: "Conflict copy changed." };
     assert.deepEqual(await classify(409, collision), { kind: "conflict", message: collision.message });
     assert.deepEqual(await classify(400, { code: "BAD_REQUEST", message: "남은 금액 초과" }),
         { kind: "rejected", message: "남은 금액 초과" });
@@ -87,7 +90,7 @@ test("a changed idempotency conflict message still preserves the original key an
     const requests = [];
     const send = async (_path, options) => {
         requests.push({ headers: options.headers, body: options.body });
-        return Response.json({ code: "CONFLICT", message: "이미 처리된 요청과 내용이 일치하지 않습니다." },
+        return Response.json({ code: "IDEMPOTENCY_KEY_CONFLICT", message: "이미 처리된 요청과 내용이 일치하지 않습니다." },
             { status: 409 });
     };
 
@@ -142,4 +145,59 @@ test("recovers and sends a final contribution below 1,000 won with the original 
         return Response.json({ contributionStatus: "COMPLETED" }, { status: 201 });
     }, "42", retry);
     assert.equal(result.kind, "completed");
+});
+
+test("lookup clears a matching completed or failed attempt and allows another key", async () => {
+    for (const status of ["COMPLETED", "FAILED"]) {
+        const tab = storage();
+        const scope = contributionStorageKey(7, "42");
+        const attempt = prepareContributionAttempt(tab, scope, 999, true);
+        const result = await lookupContributionAttempt(async (path, options) => {
+            assert.equal(path, "/api/fundings/42/contributions/idempotency");
+            assert.equal(options.method, "GET");
+            assert.equal(options.headers["Idempotency-Key"], attempt.key);
+            assert.equal(options.body, undefined);
+            return Response.json({
+                request: { amount: 999, anonymous: true, simulatePaymentFailure: false },
+                result: { contributionStatus: status },
+            });
+        }, "42", attempt);
+
+        assert.equal(result.kind, status.toLowerCase());
+        assert.equal(clearResolvedContributionAttempt(tab, scope, attempt, result), true);
+        assert.equal(readContributionAttempt(tab, scope), null);
+        assert.notEqual(prepareContributionAttempt(tab, scope, 999, true).key, attempt.key);
+    }
+});
+
+test("lookup preserves the saved key and body on absence, errors, or any request mismatch", async () => {
+    const tab = storage();
+    const scope = contributionStorageKey(7, "42");
+    const attempt = prepareContributionAttempt(tab, scope, 999, true);
+    const request = { amount: 999, anonymous: true, simulatePaymentFailure: false };
+    const completed = { contributionStatus: "COMPLETED" };
+    const lostNetwork = async () => { throw new TypeError("network disconnected"); };
+    for (const [send, kind] of [
+        [async () => Response.json({ code: "CONTRIBUTION_ATTEMPT_NOT_FOUND" }, { status: 404 }), "not-found"],
+        [async () => new Response("", { status: 401 }), "unauthorized"],
+        [async () => new Response("", { status: 503 }), "unknown"],
+        [lostNetwork, "unknown"],
+        ...[{ amount: 998 }, { anonymous: false }, { simulatePaymentFailure: true }].map((change) => [
+            async () => Response.json({ request: { ...request, ...change }, result: completed }), "mismatch",
+        ]),
+    ]) {
+        const result = await lookupContributionAttempt(send, "42", attempt);
+        assert.equal(result.kind, kind);
+        assert.equal(clearResolvedContributionAttempt(tab, scope, attempt, result), false);
+        assert.deepEqual(prepareContributionAttempt(tab, scope, 1, false), attempt);
+    }
+});
+
+test("lookup and retry share a synchronous guard that can be released for a later attempt", () => {
+    const inFlight = { current: false };
+    assert.equal(tryStartContributionAction(inFlight), true); // lookup
+    assert.equal(tryStartContributionAction(inFlight), false); // concurrent retry
+    inFlight.current = false;
+    assert.equal(tryStartContributionAction(inFlight), true); // retry
+    assert.equal(tryStartContributionAction(inFlight), false); // concurrent lookup
 });

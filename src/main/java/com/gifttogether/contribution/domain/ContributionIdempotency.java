@@ -77,6 +77,10 @@ public class ContributionIdempotency {
                 && simulatePaymentFailure == request.simulatePaymentFailure();
     }
 
+    public ContributionCreateRequest request() {
+        return new ContributionCreateRequest(amount, anonymous, simulatePaymentFailure);
+    }
+
     public ContributionCreateResponse response() {
         return new ContributionCreateResponse(contributionId, fundingId, userId, amount,
                 contributionStatus, currentAmount, remainingAmount, fundingStatus);

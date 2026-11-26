@@ -34,7 +34,8 @@ public class Funding {
     }
 
     public void validateContribution(Long amount, LocalDateTime now) {
-        requireOpenBeforeDeadline(now, "진행 중인 펀딩이 아닙니다.");
+        requireOpenBeforeDeadline(now, "진행 중인 펀딩이 아닙니다.",
+                "FUNDING_NOT_OPEN", "FUNDING_DEADLINE_PASSED");
 
         if (amount == null || amount <= 0) {
             throw new BadRequestException("참여 금액은 0원보다 커야 합니다.");
@@ -138,11 +139,16 @@ public class Funding {
     }
 
     private void requireOpenBeforeDeadline(LocalDateTime now, String invalidStatusMessage) {
+        requireOpenBeforeDeadline(now, invalidStatusMessage, "CONFLICT", "CONFLICT");
+    }
+
+    private void requireOpenBeforeDeadline(LocalDateTime now, String invalidStatusMessage,
+                                           String statusCode, String deadlineCode) {
         if (this.status != FundingStatus.OPEN) {
-            throw new ConflictException(invalidStatusMessage);
+            throw new ConflictException(statusCode, invalidStatusMessage);
         }
         if (!now.isBefore(expiredAt)) {
-            throw new ConflictException("마감된 펀딩입니다.");
+            throw new ConflictException(deadlineCode, "마감된 펀딩입니다.");
         }
     }
 
