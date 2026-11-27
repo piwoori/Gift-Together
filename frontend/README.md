@@ -2,17 +2,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Development uses `http://127.0.0.1:8080` as the default backend origin. Set `BACKEND_BASE_URL` in the shell or a private `.env.local` file to override it. See [.env.example](.env.example).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+npm run dev -- --hostname 127.0.0.1
 ```
+
+Production requires the same server-only `BACKEND_BASE_URL` at build and start. Rebuild when the backend origin changes because the build contains the rewrite destination. Browser requests continue to use relative `/api/...` paths. Do not put DB credentials or JWT secrets in frontend environment files.
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

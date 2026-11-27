@@ -38,3 +38,11 @@ out/
 
 # Local backup files
 .local-backups/
+
+# Private environment and local Spring configuration
+.env*
+!/.env.example
+!/frontend/.env.example
+application-local.properties
+application-local.yml
+application-local.yaml

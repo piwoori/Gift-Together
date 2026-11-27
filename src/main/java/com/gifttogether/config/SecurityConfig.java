@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -17,7 +19,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private static final String[] API_DOCUMENTATION_PATHS = {
+            "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml"
+    };
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final Environment environment;
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -29,16 +36,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
+                .authorizeHttpRequests(auth -> {
+                    if (environment.acceptsProfiles(Profiles.of("dev & !prod"))) {
+                        auth.requestMatchers(API_DOCUMENTATION_PATHS).permitAll();
+                    } else {
+                        auth.requestMatchers(API_DOCUMENTATION_PATHS).denyAll();
+                    }
+                    auth.requestMatchers(
                                 "/api/auth/signup",
                                 "/api/auth/login",
                                 "/error"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/wishlist")
                         .authenticated()
@@ -50,8 +57,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/fundings/*")
                         .permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated();
+                })
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, e) ->
                                 response.sendError(

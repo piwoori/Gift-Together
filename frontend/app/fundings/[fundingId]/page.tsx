@@ -1,5 +1,6 @@
 
 import Link from "next/link";
+import { backendBaseUrl } from "@/lib/backend-config";
 import { formatFundingDeadline } from "@/lib/deadline";
 
 import ContributionHistory from "./ContributionHistory";
@@ -25,7 +26,7 @@ type Funding = {
 
 async function getFunding(fundingId: string): Promise<Funding | null> {
     const response = await fetch(
-        `http://localhost:8080/api/fundings/${fundingId}`,
+        `${backendBaseUrl()}/api/fundings/${fundingId}`,
         { cache: "no-store" }
     );
 
