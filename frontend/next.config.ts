@@ -1,17 +1,28 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { NextConfig } from "next";
-import { backendBaseUrl } from "./lib/backend-config";
+import { PHASE_PRODUCTION_SERVER } from "next/constants";
+import { assertBackendRewriteMatches, backendBaseUrl } from "./lib/backend-config";
 
-const backend = backendBaseUrl();
+export default function configureNext(phase: string): NextConfig {
+    const backend = backendBaseUrl();
+    const distDir = ".next";
 
-const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${backend}/api/:path*`,
-      },
-    ];
-  },
-};
+    if (phase === PHASE_PRODUCTION_SERVER) {
+        let manifest: unknown;
+        try {
+            // Next uses this built manifest for rewrites when serving the production build.
+            manifest = JSON.parse(readFileSync(join(__dirname, distDir, "routes-manifest.json"), "utf8"));
+        } catch {
+            throw new Error("Cannot verify the built API rewrite. Rebuild before starting the server.");
+        }
+        assertBackendRewriteMatches(manifest, backend);
+    }
 
-export default nextConfig;
+    return {
+        distDir,
+        async rewrites() {
+            return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
+        },
+    };
+}

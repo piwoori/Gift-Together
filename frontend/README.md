@@ -9,7 +9,7 @@ npm ci
 npm run dev -- --hostname 127.0.0.1
 ```
 
-Production requires the same server-only `BACKEND_BASE_URL` at build and start. Rebuild when the backend origin changes because the build contains the rewrite destination. Browser requests continue to use relative `/api/...` paths. Do not put DB credentials or JWT secrets in frontend environment files.
+Production requires the same server-only `BACKEND_BASE_URL` at build and start. Startup verifies the built API rewrite against the runtime origin and fails if they differ. Rebuild when the backend origin changes. Browser requests continue to use relative `/api/...` paths. Do not put DB credentials or JWT secrets in frontend environment files.
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
