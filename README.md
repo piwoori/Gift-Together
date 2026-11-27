@@ -480,9 +480,13 @@ Swagger UI를 통해 API 명세 및 테스트가 가능합니다.
 | `GET` | `/api/wallet` | Wallet 조회 |
 | `GET` | `/api/wallet/transactions` | Wallet 적립 내역 조회 |
 
-현재 실제 로그인 대신 `X-USER-ID` 헤더를 사용하는 Mock 인증 방식을 사용합니다.
+보호 API에는 `POST /api/auth/login`의 `accessToken`을 Bearer 토큰으로 보냅니다.
 
-Swagger에서는 `Authorize` 기능을 통해 사용자 ID를 설정할 수 있습니다.
+```bash
+curl -H "Authorization: Bearer ${ACCESS_TOKEN}" http://127.0.0.1:8080/api/wishlist
+```
+
+`dev` 프로파일의 Swagger에서는 **Authorize**에 로그인에서 받은 토큰을 입력합니다.
 
 ---
 
@@ -546,7 +550,7 @@ TZ=UTC node --test tests/deadline.test.mjs
 
 ## 📖 API Documentation
 
-애플리케이션 실행 후 Swagger UI에서 확인할 수 있습니다.
+`dev` 프로파일로 실행하면 Swagger UI와 OpenAPI JSON을 확인할 수 있습니다. 기본 및 `prod` 프로파일에서는 두 기능이 비활성화됩니다.
 
 ```text
 http://localhost:8080/swagger-ui/index.html
@@ -562,39 +566,47 @@ http://localhost:8080/v3/api-docs
 
 ## 🚀 Local Run
 
-### Frontend 실행
+### 백엔드
 
-백엔드 서버가 `localhost:8080`에서 실행 중인 상태에서:
+Java 17과 PostgreSQL을 준비합니다. [환경변수 예시](.env.example)를 참고해 실행 셸이나 배포 환경에서 다음 값을 주입합니다. Spring Boot는 루트 `.env`를 자동으로 읽지 않습니다. 실제 값이 담긴 파일은 커밋하지 마세요.
+
+| 환경변수 | 설정 |
+| --- | --- |
+| `SPRING_PROFILES_ACTIVE` | 로컬은 `dev`, 운영은 `prod`. 두 프로파일을 함께 사용하면 기동이 거부됩니다. 미지정 시 API 문서는 비활성화됩니다. |
+| `SPRING_DATASOURCE_URL` | 사용할 PostgreSQL의 JDBC URL. 기본 DB 주소는 없습니다. URL에는 인증 정보를 넣지 않습니다. |
+| `SPRING_DATASOURCE_USERNAME` | 해당 DB 전용 역할 |
+| `SPRING_DATASOURCE_PASSWORD` | 해당 역할의 비밀번호. 빈 값은 명시적인 `dev`에서만 PostgreSQL에 허용됩니다. |
+| `JWT_SECRET` | 외부에서 주입하는 Base64 키. 디코딩 후 최소 32바이트이며 기본값은 없습니다. |
+
+로컬에서 키를 새로 생성하려면 `export JWT_SECRET="$(openssl rand -base64 32)"`를 사용합니다. 이 키는 셸이 종료되기 전에 필요한 실행 환경에만 주입합니다. 재기동 후 기존 토큰을 유지해야 하는 운영 환경에서는 생성한 키를 승인된 시크릿 저장소에서 관리합니다.
+
+```bash
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
+```
+
+`dev`는 백엔드를 `127.0.0.1:8080`에 바인딩하고 문서 접근을 허용합니다. `prod`는 DB URL·사용자명·비밀번호와 JWT 키가 빠졌거나 잘못된 경우 DB 초기화 전에 실패합니다. 운영 기동 전에 데이터소스와 별도 Flyway 연결 설정이 승인된 DB를 가리키는지 확인하세요. Flyway는 기동 시 대기 중인 마이그레이션을 적용하므로 운영 DB에 적용하기 전에 별도 승인을 받습니다.
+
+### 프런트엔드
 
 ```bash
 cd frontend
-npm install
-npm run dev
+npm ci
+npm run dev -- --hostname 127.0.0.1
 ```
 
-### Requirements
-
-- Java 17
-- PostgreSQL
-- Gradle Wrapper
-
-PostgreSQL에 다음 데이터베이스를 생성합니다.
+개발 기본 백엔드는 `http://127.0.0.1:8080`입니다. 다른 포트를 사용할 때는 `BACKEND_BASE_URL`에 HTTP(S) origin만 설정합니다. 운영에서는 빌드와 실행에 **같은 값**을 주입합니다. rewrite는 빌드에서 확정되고 SSR은 실행 환경을 읽습니다. 프로덕션 서버는 두 주소가 다르거나 빌드의 rewrite를 확인할 수 없으면 기동을 거부합니다. 백엔드 주소가 바뀌면 다시 빌드합니다.
 
 ```bash
-createdb gift_together
+export BACKEND_BASE_URL=http://127.0.0.1:18080
+npm run build -- --webpack
+npm run start -- --hostname 127.0.0.1
 ```
 
-애플리케이션 실행:
+브라우저는 기존 상대 경로 `/api/...`를 사용합니다. 프런트엔드 환경에 DB 자격 증명이나 JWT 키를 주입하지 않습니다.
 
-```bash
-./gradlew bootRun
-```
+### 안전한 테스트 실행
 
-기본 서버:
-
-```text
-http://localhost:8080
-```
+`dev`·`prod` 및 로컬 DB 연결 설정을 테스트 셸에 상속하지 않습니다. DB가 필요한 기존 테스트는 H2 메모리 또는 테스트마다 지정된 PostgreSQL Testcontainers 주소를 사용합니다. 별도 Flyway URL을 내보내지 않고, 외부 설정·실행 인자가 테스트 연결 대상을 바꾸지 않는지 확인한 뒤 `./gradlew --offline --no-daemon test bootJar`를 실행합니다. 기존 로컬 DB나 서비스 검증 DB에 스키마 초기화 테스트를 실행하지 않습니다.
 
 ---
 
